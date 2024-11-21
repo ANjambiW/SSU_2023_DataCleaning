@@ -1,0 +1,718 @@
+---
+title: 'DATA CLEANING: BATCH1 - SSU SECTION C'
+author: "Njambi"
+date: "January 23, 2024"
+output: html_document
+#encoding: UTF-8
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+## Loading necessary libraries
+
+```{r, include=FALSE}
+
+library(tidyverse) # includes the dplyr, ggplot2, tidyr, readr, stringr, forcats, tibble packages
+library(readxl)
+library(Hmisc)
+library(labelled)
+library(magrittr)
+library(datawizard)
+library(gtsummary)
+library(gt)
+library(kableExtra)
+library(flextable)
+library(splitstackshape)
+
+#library(ggplot2)
+#library(tidyr)
+#library(tibble)
+#library(dplyr)
+#library(stringr)
+
+```
+
+
+## Set the working directory
+
+```{r}
+# Check the current working directory
+
+getwd()
+```
+
+
+```{r}
+# Set working directory (Not necessary since the current wd is the correct wd)
+
+setwd("C:\\Users\\awanjau\\OneDrive - CGIAR\\Alliance\\Alliance_2023\\iShamba_SSU\\SSU_Weather_SurveyAnalysis")
+```
+
+## Loading data
+
+```{r}
+# Read a csv file
+
+ssu_sec_d <- read_csv("ssu_sec_d.csv") # Use this code when the csv file is in the set working directory
+
+#display portion of the data
+
+#View(ssu_sec_d)
+```
+
+
+## Understanding data at hand (Screening)
+
+
+```{r}
+# Check the dimension of the data
+
+dim(ssu_sec_d)
+```
+
+
+```{r}
+# Obatain the column names
+
+names(ssu_sec_d)
+```
+
+
+
+### Renaming the columns
+
+The column names are too long for analysis.  
+For ease of subsequent analysis, we will conduct this part of data cleaning process as early as now, before the data cleaning section.  
+
+To create column names and labels, we create new column names, then use the original (long) names as column labels.  
+
+
+```{r}
+# Create new column names
+
+colnames(ssu_sec_c) <- c(
+  "index", "id", "after_wf_mitigation", "after_wf_mitigation_o",  "current_mitigation_yn",  "current_mitigation",  "current_mitigation_o"
+  )
+
+# Display a part of the data
+
+head(ssu_sec_c)
+
+```
+
+
+Column names are now short and standard.
+
+
+
+```{r}
+# Check for duplicate rows
+
+duplicate_rows <- duplicated(ssu_sec_c) | duplicated(ssu_sec_c, fromLast = TRUE)
+
+# Display the duplicate rows
+
+print(ssu_sec_c[duplicate_rows, ])
+
+# There are no duplicate rows
+
+```
+
+
+### Generate a codebook for the data
+
+Let's now get an overview of all variables and some more information about each variable (e.g. labels, values or value range, frequencies, missing values).  
+We can achieve this by using data_codebook().
+
+
+```{r}
+
+# Codebook 
+# Requires package datawizard
+
+data_codebook(ssu_sec_c)
+
+```
+
+
+### Clean Other (Specify)
+
+```{r}
+
+unique(ssu_sec_c$after_wf_mitigation_o)
+
+
+
+```
+
+
+
+```{r}
+
+#select(ends_with("_o"))
+
+ssu_sec_c <- ssu_sec_c %>%
+  mutate(after_wf_mitigation_o = str_to_sentence(after_wf_mitigation_o))  %>% # Capitalize only the first letter of the sentence
+  mutate(after_wf_mitigation_o = str_remove_all(after_wf_mitigation_o, "\\.")) %>% # Remove all periods at the end of the sentences
+  mutate(after_wf_mitigation_o = str_squish(after_wf_mitigation_o)) # Remove all extra spaces
+
+```
+
+
+
+```{r}
+
+unique(ssu_sec_c$after_wf_mitigation_o)
+
+```
+
+
+### Replace "Other (Specify)" in after_wf_mitigation with after_wf_mitigation_o
+
+
+```{r}
+gt(data.frame(table(ssu_sec_c$after_wf_mitigation)))
+```
+
+
+
+```{r}
+
+ssu_sec_c <- ssu_sec_c %>%
+  mutate(after_wf_mitigation = str_replace_all(after_wf_mitigation, "Other \\(specify\\)",
+                                               replacement = ssu_sec_c$after_wf_mitigation_o))
+ssu_sec_c
+```
+
+
+
+```{r}
+
+gt(data.frame(table(ssu_sec_c$after_wf_mitigation)))
+
+```
+
+
+
+### Display the unique values of after_wf_mitigation variable
+
+```{r, include=FALSE}
+
+# This code is similar to using ssu_sece$_ with every variable name
+
+attach(ssu_sec_c)
+
+```
+
+
+
+```{r}
+
+# Unique values of county
+
+unique(after_wf_mitigation)
+
+```
+
+ 
+
+
+# Separate the multiple responses of after_wf_mitigation into rows
+
+```{r}
+
+names(ssu_sec_c)
+```
+
+
+
+```{r}
+
+#R.Version()
+
+View(ssu_sec_c)
+
+dim(ssu_sec_c)
+```
+
+
+
+```{r}
+
+ssu_secc_clean1 <- ssu_sec_c %>%
+  #select(-ends_with("_o")) %>%
+  mutate(after_wf_mitigation = str_replace_all(after_wf_mitigation, "[0-9=]+", replacement = "")) %>%
+  mutate(after_wf_mitigation = str_remove_all(after_wf_mitigation, "\\.")) %>%
+  filter(!is.na(after_wf_mitigation))  #%>%   # Remove rows with NAs
+  
+  
+  #ssu_secc_clean1 <- splitstackshape::cSplit(ssu_secc_clean1, "after_wf_mitigation", sep = ",", direction = "wide")
+  
+  
+
+#View(ssu_secc_clean1)
+  
+  
+dim(ssu_secc_clean1)  # 104 5
+ 
+```
+
+
+
+```{r}
+
+# ssu_secc_clean1 <- ssu_secc_clean1 %>%
+#   separate_rows(after_wf_mitigation, sep = ", ") %>%
+#   mutate(value = "Yes") %>%
+#   pivot_wider(names_from = after_wf_mitigation, values_from = value, values_fill = "No")
+#   
+```
+
+
+
+```{r}
+
+dim(ssu_secc_clean1)
+
+# long = 126  6
+# wide = 104  19
+
+View(ssu_secc_clean1)
+
+
+```
+
+
+
+
+
+
+```{r}
+
+#View(ssu_sec_c)
+
+ssu_secc_clean_long <- ssu_sec_c %>%
+  select(-ends_with("_o"))%>%
+  mutate(after_wf_mitigation = str_replace_all(after_wf_mitigation, "[0-9=]+", replacement = "")) %>%
+  mutate(after_wf_mitigation = str_remove_all(after_wf_mitigation, "\\.")) %>%
+  separate_longer_delim(after_wf_mitigation, delim = ", ") %>%
+  filter(!is.na(after_wf_mitigation))  %>%  # Remove rows with NAs
+  mutate(levels = "Yes", prefx = "c1") #%>%
+  
+# Concatenate prefx and after_wf_mitigation
+
+ssu_secc_clean_long <- ssu_secc_clean_long %>%
+  mutate(after_wf_mitigation = paste(ssu_secc_clean_long$prefx, after_wf_mitigation, sep = "_")) %>%
+  select(-7)  # Drop the prefx column
+  
+# spread (to wide format)
+
+  ssu_secc_clean_wide <- tidyr::spread(ssu_secc_clean_long, after_wf_mitigation, levels, fill = "No") 
+  
+  
+
+#pivot_wider(names_from = after_wf_mitigation, values_from = values values_fill = "No")
+
+
+dim(ssu_secc_clean_long)  # wide 126   7   
+
+dim(ssu_secc_clean_wide)  # wide 104   19  
+  
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+View(after_wf_mitigation)
+
+after_wf_mitigation1 <- after_wf_mitigation %>%
+  str_replace_all("[0-9=]+", replacement = "") %>%
+  str_remove_all("\\.") 
+
+  data_separated <- tibble(after_wf_mitigation1) %>%
+  separate_rows(sep = ", ") %>%
+    filter(!is.na(after_wf_mitigation))  %>%  # Remove rows with NAs
+    mutate(values = "Yes") %>%  # Add a column with value 1
+    spread(after_wf_mitigation1, values, fill = "No")
+
+
+  # Spread to create binary columns
+result <- spread(data_separated, mitigation_column, value, fill = 0)
+  
+
+unique(after_wf_mitigation1)
+
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+
+# Separate the multiple responses into rows
+
+after_wf_mitigation_long <- ssu_sec_c %>%
+  select(c(id,after_wf_mitigation)) %>%
+  separate_rows(after_wf_mitigation, sep = ", ") %>% 
+  filter(!is.na(after_wf_mitigation))  # Remove rows with NAs
+
+# Check the dimension of the new data
+
+dim(after_wf_mitigation_long)
+
+#View(after_wf_mitigation_long)
+
+# Number of rows increased from 106 to 126
+
+```
+
+
+# Create a binary indicator variable
+
+```{r}
+
+# Create a binary indicator variable
+
+after_wf_mitigation_long <- after_wf_mitigation_long %>%
+  mutate(after_wf_mitigation_yesno = "Yes") # %>%
+  #spread(responses, selected, fill = 0)  # Spread into wide format
+
+# Check the dimension of the new data
+
+dim(after_wf_mitigation_long)
+
+```
+
+
+## Separate after_wf_mitigation column into values and labels columns
+
+
+```{r}
+
+# Check unique values of after_wf_mitigation
+
+unique(after_wf_mitigation_long$after_wf_mitigation)
+
+
+
+
+after_wf_mitigation_long <- after_wf_mitigation_long %>%
+  separate(
+    col = after_wf_mitigation, 
+    into = c("after_wf_mitigation_values", "after_wf_mitigation_labels"),
+    sep = "=",
+    convert = TRUE,
+    remove = FALSE 
+           ) 
+
+
+# Remove periods at the end of after_wf_mitigation_labels column
+
+unique(after_wf_mitigation_long$after_wf_mitigation_labels) # Unique values of the column
+
+
+after_wf_mitigation_long$after_wf_mitigation_labels <- gsub("\\.$", "", after_wf_mitigation_long$after_wf_mitigation_labels)
+
+
+
+
+# Convert after_wf_mitigation to factor
+
+
+
+# Define after_wf_mitigation levels
+
+after_wf_mitigation_levels <- c("Got insurance for my crops", "Got insurance for my livestock", "Applied for credit", "Planted smaller area", "Planted larger area", "Did not plant/did not establish crop on the farm", "Increased the number of animals", "Reduced number of livestock", "Did not keep animals", "Took up an alternative non-agricultural activity", "I didn't use any risk mitigation measures", "Other (specify)")
+
+
+# Mutate after_wf_mitigation
+
+after_wf_mitigation_long %>%
+  mutate(
+  after_wf_mitigation_labels = factor(
+    after_wf_mitigation_labels, 
+    #levels = after_wf_mitigation_levels
+    levels(intersect(unique(after_wf_mitigation_long$after_wf_mitigation), after_wf_mitigation_levels))
+    )  
+  )
+
+head(after_wf_mitigation_long)
+
+dim(after_wf_mitigation_long)
+
+```
+
+
+
+# Convert the after_wf_mitigation_long data from long to wide
+
+
+
+```{r}
+
+after_wf_mitigation_long <- after_wf_mitigation_long %>%
+  mutate(unique_id = row_number())
+
+names(after_wf_mitigation_long)
+```
+
+
+
+
+```{r}
+
+after_wf_mitigation_wide <- after_wf_mitigation_long %>%
+  distinct(unique_id, .keep_all = TRUE) %>%
+  select(unique_id, id, after_wf_mitigation_labels, after_wf_mitigation_yesno) %>%
+  pivot_wider(
+  id_cols = c(unique_id),
+  names_from = after_wf_mitigation_labels, 
+  values_from = after_wf_mitigation_yesno,
+  values_fill = list(after_wf_mitigation_yesno  = "No")
+  )
+
+dim(after_wf_mitigation_wide)
+
+View(after_wf_mitigation_wide)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Observations (Diagnosis)
+
+#### The data
+
++ Most of the variables have missing values.  
++ Some columns have multiple responses separated with a comma.
++ Data types are not correctly formated, eg the categorical variables are foratted as characters instead of factors.
++ Data has 106 rows and 6 columns.  
++ The column names are too long for analysis.  
++ There are no duplicate rows in the data.  
+  
+
+
+#### after_wf_mitigation
+
++ Has multiple responses in one column.  
++ Has 2 missing values.  
++ Upon separating by '=' sign, the reulsting labels column has values with period at the end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Data cleaning activities (Treatment)
+
+
+#### The data
+
+1. .
+2. .
+3. .  
+4. .   
+5. .
+ 
+
+#### after_wf_mitigation
+
+1. .
+2. .
+3. .
+4. ".
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Column labels
+
+After modifying the data, we can now assign labels to all the column names.
+
+
+```{r}
+ # Define column labels
+
+variable_labels <- c(
+  "index" = "Index",
+  "id" = "E1..Respondent.ID",
+  "gender" = "E2..Gender",
+  "gender_values" = "Gender codes",
+  "gender_labels" = "Gender categories",
+  "county" = "E3..Which.county.do.you.reside.in.",
+  "age" = "E4..How.old.are.you.",
+  "age_values" = "Age codes",
+  "age_labels" = "Age categories",
+  "loe" = "E5..What.is.the.highest.level.of.formal.education.you.have.completed.",
+  "loe_values" = "loe codes",
+  "loe_labels" = "loe categories",
+  "hhsize" = "E6..Including.yourself..how.many.adults.and.children..live.in.your.household...The.individuals.who.have.been.residing.in.your.household.continuously.for.the.past.six.months"
+    )
+
+```
+
+
+```{r}
+# Set variable/column labels
+
+   ssu_sece_clean <- ssu_sece_clean %>%
+     set_variable_labels(.labels = variable_labels) # Requires package labelled
+
+# ssu_sece_clean <- ssu_sece_clean %>%
+#     set_variable_labels(value = variable_labels)
+
+
+```
+
+
+Using the function View() to open the new data in a spreadsheet reveals the column names and labels.
+
+```{r}
+
+View(ssu_sece_clean)
+
+```
+
+
+
+```{r}
+
+# Drop un needed columns and save clean data
+
+ssu_sec_e_arch <- ssu_sece_clean %>%
+  select(c(1:2, 5:6, 9, 12:13))
+
+# HINT: Passing View() to a pipeline produces NULL data structure.
+# Avoid the function within a pipeline
+
+```
+
+
+## Generate a data dictionary
+
+Generate a data dictionnary and search for variables with `look_for()`
+
+Requires package labelled.
+
+
+
+```{r}
+# Data dictionary
+
+
+ssu_B1sec_e_dict <- look_for(ssu_sec_e_arch, labels = TRUE, values = TRUE) 
+
+# Fomart table
+
+#flextable(data_dict)
+
+#gt(data_dict)
+
+kable(ssu_B1sec_e_dict)
+
+```
+
+
+
+## Export data to CSV
+
+
+```{r}
+
+#write.csv(ssu_B1sec_e_dict, "ssuB1_sec_e_arch.csv", row.names = FALSE)
+
+```
+
+

@@ -1,0 +1,1982 @@
+---
+title: 'DATA CLEANING: BATCH1 - SSU SECTION B'
+author: "Njambi"
+date: "January 26, 2024"
+output: html_document
+#encoding: UTF-8
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+## Loading necessary libraries
+
+```{r, include=FALSE}
+
+library(tidyverse) # includes the dplyr, ggplot2, tidyr, readr, stringr, forcats, tibble packages
+library(readxl)
+library(Hmisc)
+library(labelled)
+library(magrittr)
+library(datawizard)
+library(gtsummary)
+library(gt)
+library(kableExtra)
+library(flextable)
+library(splitstackshape)
+
+#library(ggplot2)
+#library(tidyr)
+#library(tibble)
+#library(dplyr)
+#library(stringr)
+
+```
+
+
+## Set the working directory
+
+```{r, include=FALSE}
+# Check the current working directory
+
+getwd()
+```
+
+
+```{r, include=FALSE}
+# Set working directory (Not necessary since the current wd is the correct wd)
+
+setwd("C:\\Users\\awanjau\\OneDrive - CGIAR\\Alliance\\Alliance_2023\\iShamba_SSU\\SSU_Weather_SurveyAnalysis")
+```
+
+## Loading data
+
+```{r}
+# Read a csv file
+
+ssu_sec_b <- read_csv("ssu_sec_b.csv") # Use this code when the csv file is in the set working directory
+
+#display portion of the data
+
+#View(ssu_sec_b)
+#names(ssu_sec_b)
+```
+
+
+## Understanding data at hand (Screening)
+
+
+```{r}
+# Check the dimension of the data
+
+dim(ssu_sec_b)
+```
+
+
+### Generate a codebook for the data
+
+
+
+```{r, include=FALSE}
+
+# Codebook 
+# Requires package datawizard
+
+data_codebook(ssu_sec_b)
+
+#  variables shown implies that there could be empty columns in the data.
+
+```
+
+## Check empty columns
+
+```{r}
+
+# Requires package datawizard
+
+empty_columns(ssu_sec_b)
+
+# There are 6 empty columns in the data
+
+```
+
+
+## Drop empty columns
+
+
+```{r}
+
+# ssu_sec_b <- remove_empty_columns(ssu_sec_b)
+# 
+# dim(ssu_sec_b)
+
+```
+
+
+
+
+## Check duplicate columns
+
+```{r}
+
+duplicate_columns <- ssu_sec_b[, duplicated(names(ssu_sec_b))]
+
+#ssu_seca_clean[, empty_columns(ssu_seca_clean)]
+
+# Print the names of duplicate columns
+
+print(names(duplicate_columns))
+
+# There are no duplicate columns.
+
+```
+
+
+
+## Check empty rows
+
+```{r}
+
+# Requires package datawizard
+
+empty_rows(ssu_sec_b)
+
+# There are no empty rows in the data.
+
+
+```
+
+
+
+# Check for duplicate rows
+
+
+```{r}
+
+duplicate_rows <- duplicated(ssu_sec_b) | duplicated(ssu_sec_b, fromLast = TRUE)
+
+# Display the duplicate rows
+
+print(ssu_sec_b[duplicate_rows, ])
+
+# There are no duplicate rows
+
+```
+
+
+
+
+
+### Renaming the columns
+
+
+
+```{r, echo=FALSE, include=FALSE}
+
+# Obtain column names in the data
+
+names(ssu_sec_b)
+```
+  
+## Reorder columns
+
+
+
+```{r}
+ssu_sec_b <- ssu_sec_b[, c(1:9, 32, 10:12, 33, 13:24, 34, 25:27, 35, 28:31)]
+names(ssu_sec_b)
+```
+
+                                                                                                                    
+                                                                                                                    
+
+```{r}
+
+# Rename columns
+
+ssu_sec_b <- ssu_sec_b %>%
+  rename(
+    
+   index = "index",
+   respondentID = "E1. Respondent ID",
+   mainFarmingActivity = "B1. What is your MAIN farming activity in 2022?",
+   mainCropName = "B2. What is the name of the MAIN crop you produce?",
+   agriculturalLandSize = "B3. What is the size of your agricultural land in acres?",
+   mainCropLandSize = "B4. What area of land does B2 occupy in acres?",
+   mainCropCultivationDecisionMaker = "B5. Who mainly decided how to cultivate B2?",
+   otherCultivationDecisionMaker = "77=Other (specify)...8",
+   normalHarvestQuantity = "B6. On normal main cropping season, how much B2 do you harvest?",
+   normalHarvestFrequency = "B7.1. Frequency",
+   normalHarvestUnit = "B7.2 Unit",
+   otherNormalHarvestUnit = "12=other (specify)...11",
+   HarvestQuantity2022 = "B8. During the main cropping season 2022, how much B2 did you harvest?",
+   HarvestFrequency2022 = "B9.1. Frequency",
+   HarvestUnit2022 = "B9.2 Unit",
+   other2022HarvestUnit = "12=other (specify)...14",
+   marketPricePerUnit = "B10. What was the prevailing market price per unit for B2? [KES]",
+   disposalDecisionMaker = "B11. Who mainly made the decision on how to dispose of B2?",
+   otherDisposalDecisionMaker = "77=Other (specify)...17",
+   mainLivestockRaised = "B12. Which livestock did you MAINLY raise in 2022?",
+   otherMainLivestockRaised = "77=Other (specify)...19",
+   livestockSize = "B13. What was the size of B12?",
+   livestockKeepingDecisionMaker = "B14. Who mainly decided how to keep B12?",
+   otherLivestockKeepingDecisionMaker = "77=Other (specify)...22",
+   mainProductOfLivestock = "B15. What was the main product of B12?",
+   normalLivestockProductQuantity = "B16. In a normal year, how much of B15 do you get?",
+   normalLivestockProductFrequency = "B17.1. Frequency",
+   normalLivestockProductUnit = "B17.2 Unit",
+   otherNormalLivestockProductUnit = "77=other (specify)...26",
+   livestockProduct2022Quantity = "B18. How much of B15 did you get in 2022?",
+   livestockProduct2022Frequency = "B19.1. Frequency",
+   livestockProduct2022Unit = "B19.2 Unit",
+   otherLivestockProduct2022Unit = "77=other (specify)...29",
+   unitPrice = "B20. What was the unit price",
+   livestockUseDecisionMakerB15 = "B21. Who mainly decided how to keep B15?", # should be "use" in place of "keep"
+
+  )
+
+names(ssu_sec_b)
+```
+
+
+
+
+
+
+## Codedebook 2
+
+```{r}
+
+# Codebook after renaming
+# Requires package datawizard
+
+gt(data_codebook(ssu_sec_b))
+
+
+```
+
+
+```{r, include=FALSE}
+attach(ssu_sec_b)
+```
+
+
+
+## 3. mainFarmingActivity
+
+```{r}
+unique(mainFarmingActivity)
+```
+
++ Remove "[0-9=]".  
++ Remove "."  
++ Format as factor.
+
+
+
+```{r}
+
+mainFarmingActivity_levels <- c("Crop production", "Livestock production", "Both crop and livestock production")
+  
+ssu_secb_clean <- ssu_sec_b %>%
+  mutate(
+
+    mainFarmingActivity = str_remove_all(mainFarmingActivity, "[0-9=]|\\."),
+    mainFarmingActivity = factor(mainFarmingActivity, levels = intersect(mainFarmingActivity_levels, unique(mainFarmingActivity)))          #mainFarmingActivity_levels)
+  )
+
+
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$mainFarmingActivity)
+```
+
+
+
+## 4. mainCropName
+
+```{r}
+unique(mainCropName)
+```
+
++ Format to title case.  
++ Replace potato, onion, and onions  with Potatoes, Onions, and Green Grams respectively.  
++ Replace "Vegetables", "African Greens", "Kales", "Managu" with "African Leafy Vegetables".  
++ **Is there a crop called snow?**  
++ Format as factor.  
+
+
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+
+    mainCropName =str_to_title(mainCropName),
+    mainCropName = str_replace_all(mainCropName, "\\bPotato\\b", "Potatoes"),
+    mainCropName = str_replace_all(mainCropName, "\\bOnion\\b", "Onions"),
+    mainCropName = str_replace_all(mainCropName, "\\bGreen Gram\\b", "Green Grams"),
+    mainCropName = str_replace_all(mainCropName, "\\bPassion\\b", "Passion Fruits"),
+    mainCropName = ifelse(mainCropName %in% c("Vegetables", "African Greens", "Kales", "Managu"),
+                              "African Leafy Vegetables", mainCropName),
+    mainCropName = factor(mainCropName)
+  )
+
+
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$mainCropName)
+```
+
+
+## 5. agriculturalLandSize
+
+
+```{r}
+unique(agriculturalLandSize)
+```
+
++ Remove all non-digit characters, except the decimal point.  
++ Convert from character to numeric.  
++ Check outliers.  
+
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    #agriculturalLandSize = as.numeric(str_remove_all(agriculturalLandSize, "[a-zA-Z]|[[:blank:]]"))
+    
+    agriculturalLandSize = as.numeric(str_remove_all(agriculturalLandSize, "[^0-9.]"))
+    
+  )
+
+```
+
+
+
+
+```{r}
+
+unique(ssu_secb_clean$agriculturalLandSize)
+```
+
+
+
+```{r}
+# Calculate the mean and the five number summary of hhsize
+
+ ssu_secb_clean %>%
+   select(agriculturalLandSize) %>%
+   summary()
+
+```
+
+
+```{r}
+# Box-plot of hhsize
+ 
+  ssu_secb_clean %>%
+  filter(!is.na(agriculturalLandSize)) %>%
+    ggplot(aes(y = agriculturalLandSize)) +
+     geom_boxplot(outlier.color = "red") +
+     labs(title = "Agricultural Land Size Box Plot")
+
+```
+
+
+
+
+### Filter rows with outliers
+
+
+
+```{r}
+
+# # Identify outliers based on boxplot statistics
+ 
+#outliers <- boxplot.stats(as.numeric(ssu_secb_clean$agriculturalLandSize[!is.na(ssu_secb_clean$agriculturalLandSize)]))$out
+
+outliers <- boxplot.stats(ssu_secb_clean$agriculturalLandSize[!is.na(ssu_secb_clean$agriculturalLandSize)])$out
+
+  
+# # # Display rows with outliers in agriculturalLandSize column
+ 
+  rows_with_outliers <- ssu_secb_clean %>%
+    filter(agriculturalLandSize %in% outliers)
+  
+  rows_with_outliers
+ 
+  #kable(rows_with_outliers)
+  
+```
+
+
+
+
+## 6. mainCropLandSize
+
+
+```{r}
+unique(mainCropLandSize)
+```
+
+
++ Remove all non-digit characters, except the decimal point.  
++ Convert from character to numeric.  
++ Check outliers.  
+
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+     mainCropLandSize = as.numeric(str_remove_all(mainCropLandSize, "[^0-9.]"))
+    
+  )
+
+```
+
+
+
+
+```{r}
+
+unique(ssu_secb_clean$mainCropLandSize)
+```
+
+
+### Is mainCropLandSize <= agriculturalLandSize?
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(is_cropland_leq_agricland = mainCropLandSize <= agriculturalLandSize)
+table(ssu_secb_clean$is_cropland_leq_agricland)
+
+```
+
+There is one row for which mainCropLandSize > agriculturalLandSize.  
+
+
+
+```{r}
+
+# Filter the row
+
+ssu_secb_clean %>%
+  filter(is_cropland_leq_agricland == FALSE)
+
+```
+
++ ***For respondentID == 704615, mainCropLandSize = 12 exceeds the agriculturalLandSize = 10.***   
+*** Please confirm with iShamba.***  
+
+
+
+### Calculate the mean and the five number summary of mainCropLandSize
+
+
+```{r}
+# Calculate the mean and the five number summary of mainCropLandSize
+
+ ssu_secb_clean %>%
+  select(mainCropName, mainCropLandSize) %>%
+  group_by(mainCropName) %>%
+   summarise(
+     frequency = n(),
+     minimum = min(mainCropLandSize, na.rm = TRUE),
+     q1 = quantile(mainCropLandSize, 0.25, na.rm = TRUE),
+     median = quantile(mainCropLandSize, 0.5, na.rm = TRUE),
+     q3 = quantile(mainCropLandSize, 0.75, na.rm = TRUE),
+     maximum = max(mainCropLandSize, na.rm = TRUE)
+     )
+
+```
+
+
+```{r}
+# Box-plot of mainCropLandSize
+ 
+  ssu_secb_clean %>%
+  filter(!is.na(mainCropLandSize)) %>%
+    ggplot(aes(x = mainCropName, y = mainCropLandSize)) +
+     geom_boxplot(outlier.color = "red") +
+     labs(title = "Main Crop Land Size Box Plot")
+
+```
+
+
+
+
+### Filter rows with outliers
+
+
+
+```{r}
+
+# # Identify outliers based on boxplot statistics
+ 
+#outliers <- boxplot.stats(as.numeric(ssu_secb_clean$agriculturalLandSize[!is.na(ssu_secb_clean$agriculturalLandSize)]))$out
+
+outliers <- boxplot.stats(ssu_secb_clean$mainCropLandSize[!is.na(ssu_secb_clean$mainCropLandSize)])$out
+
+  
+# # # Display rows with outliers in mainCropLandSize column
+ 
+  rows_with_outliers <- ssu_secb_clean %>%
+    filter(mainCropLandSize %in% outliers)
+  
+  rows_with_outliers
+ 
+  #kable(rows_with_outliers)
+  
+```
+
+
+
+
+```{r}
+rows_without_outliers <- ssu_secb_clean %>%
+    filter(!(mainCropLandSize %in% outliers))
+
+rows_without_outliers %>%
+ggplot(aes(y = mainCropLandSize)) +
+     geom_boxplot() +
+     labs(title = "Main Crop Land Size Box Plot")
+
+
+```
+
+
+
+
+
+## 7. mainCropCultivationDecisionMaker
+
+
+
+```{r}
+unique(mainCropCultivationDecisionMaker)
+```
++ Remove [0-9]=.  
++ Format as factor.  
++ No other (specify).
+
+
+
+```{r}
+
+decisionMakerLevels = c("Male HHD", "Female HHD", "Joint")
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+
+    mainCropCultivationDecisionMaker = str_remove_all(mainCropCultivationDecisionMaker, "[0-9=]"),
+    mainCropCultivationDecisionMaker = factor(mainCropCultivationDecisionMaker,
+                                              levels = intersect(decisionMakerLevels, unique(mainCropCultivationDecisionMaker)),
+                                              exclude = "Other (Specify)"
+                                              )
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$mainCropCultivationDecisionMaker)
+```
+
+
+## 8. otherCultivationDecisionMaker
+
+This column is blank.
+
+
+
+## 9. normalHarvestQuantity
+
+```{r}
+unique(normalHarvestQuantity)
+```
+
+
+```{r}
+
+# Filter rows to crosscheck
+nhq_rows_to_verify <- ssu_secb_clean %>%
+  select(c(1:2, 4, 6, 9:11))%>%
+  filter(normalHarvestQuantity %in% c("27 bags per acre", "3 bags per acre", "1 acre of maize is sold green. 1.7 dried 23 bags", "10 bags", "3Kg per plant", "26 bags per acre", "5000Kg per acre"))
+
+nhq_rows_to_verify
+
+```
+
+
++ For id == 684858 replace normalHarvestQuantity "1 acre of maize is sold green. 1.7 dried 23 bags" with 23.  
++ ***For id == 713647 and normalHarvestQuantity == "3Kg per plant", how many plants does the farmer have. (For now set to 1 plant)***  
+***Change corresponding normalHarvestUnit from count to "Kilograms".***  
++ For id == 704930 and normalHarvestQuantity == "27 bags per acre", replace with (27*5 acres of land occupied by crop).  
++ For id == 677321 and normalHarvestQuantity == "26 bags per acre", replace with (26*2 acres of land occupied by crop).  
++ For id == 736773 and normalHarvestQuantity == "5000Kg per acre", replace corresponding normalHarvestUnit (count) with "Kilograms" since 1 acre is allocated to crop.  
++ For id == 731742 and normalHarvestQuantity == "3 bags per acre", replace with (3*2 acres of land occupied by crop).  
++ Remove all non-numeric characters except decimal point (if any).  
++ Format normalHarvestQuantity as numeric.  
+
+
+~~**Crosscheck**~~
+
+```{r}
+
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    normalHarvestUnit = if_else(respondentID == 713647, "Kilograms", normalHarvestUnit),
+    normalHarvestQuantity = case_when(
+      respondentID == 684858 & normalHarvestQuantity == "1 acre of maize is sold green. 1.7 dried 23 bags" ~ "23",
+      respondentID == 713647 & str_detect(normalHarvestQuantity, "3Kg per plant") ~ as.character(as.numeric(str_extract(normalHarvestQuantity, "\\d+")) * 1),
+      respondentID == 704930 & normalHarvestQuantity == "27 bags per acre" ~ as.character(as.numeric(str_extract(normalHarvestQuantity, "\\d+")) * 5),
+        #as.character((27 * 5)),
+      respondentID == 677321 & normalHarvestQuantity == "26 bags per acre" ~ as.character(as.numeric(str_extract(normalHarvestQuantity, "\\d+")) * 2),
+        #as.character((26 * 2)),
+      respondentID == 731742 & normalHarvestQuantity == "3 bags per acre" ~ as.character(as.numeric(str_extract(normalHarvestQuantity, "\\d+")) * 2),
+        #as.character((3 * 2)),
+      TRUE ~ normalHarvestQuantity # If none of the specified conditions are satisfied, then retain the original value of normalHarvestQuantity
+    ),
+    normalHarvestQuantity = as.numeric(str_remove_all(normalHarvestQuantity, "[^0-9.]")),
+    normalHarvestUnit = if_else(respondentID == 736773, "Kilograms", normalHarvestUnit)
+    
+  )
+
+```
+
+
+
+
+```{r}
+ssu_secb_clean$normalHarvestQuantity
+```
+
+
+
+
+```{r}
+ssu_secb_clean$normalHarvestUnit
+```
+
+Index 62 and 97 are now "Kilograms" and not "6=count".
+
+
+
+
+## 10. normalHarvestFrequency
+
+```{r}
+unique(normalHarvestFrequency)
+```
+
+
++ Remove "\\d+. "  
++ ***Column "7. Others (specify)" is missing.***  
++ ***Check all levels.***  
+
+
+
+```{r}
+
+harvestFrequencyLevels <- c("Daily", "Weekly", "Monthly", "Seasonal (4 months)", "Seasonal ( 6 months)", "Yearly")
+  
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    normalHarvestFrequency = str_replace_all(normalHarvestFrequency, "(?i)\\bna\\b", ""),
+    normalHarvestFrequency = str_remove(normalHarvestFrequency, "\\d+. "), # Removes only the first instance of the pattern
+    normalHarvestFrequency = factor(normalHarvestFrequency, levels = intersect(harvestFrequencyLevels, unique(normalHarvestFrequency)), ordered = TRUE)
+    
+  )
+
+# harvestFrequencyLevels <- harvestFrequencyLevels %>%
+#   filter(!is.na(harvestFrequencyLevels))
+
+```
+
+
+
+```{r}
+
+unique(ssu_secb_clean$normalHarvestFrequency)
+```
+
+
+
+## 11. normalHarvestUnit
+
+
+```{r}
+unique(normalHarvestUnit)
+```
+
+
++ Remove [0-9]=.  
++ Replace "other (specify)".  
++ Format with sentence case.  
++ Format as factor.
+
+
+
+```{r}
+
+#cropcodes_levels = c("90kg bag", "70kg bag", "50kg bag", "10kg bag", "Gorogoro (2kg tin)", "Count", "Headloads", "Wheelbarrows", "Bunches", "Bales", "Crates", "Kilograms", "Tonnes",  "Acres")
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+
+    normalHarvestUnit = str_remove_all(normalHarvestUnit, "\\d+=") #,
+    
+    #normalHarvestUnit = factor(normalHarvestUnit, levels = cropcodes_levels)
+  )
+
+unique(ssu_secb_clean$normalHarvestUnit)
+
+```
+
+
++ "Kilograms" is from normalHarvestQuantity. (**Mutated 11. normalHarvestUnit from 9. normalHarvestQuantity.**)
+
+
+
+# 12. otherNormalHarvestUnit
+
+
+```{r}
+unique(otherNormalHarvestUnit)
+```
+
+
++ Replace "Kg", "Kgs", "1 kg", "kg" with "Kilograms".  
++ Replace "Tonnes", "2t", "tonne" with "Tonnes".  
++ Replace "Quarter an acre" "1.5 Acres" with "Acres".  
++ Remove variations of NAs.
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    otherNormalHarvestUnit = ifelse(otherNormalHarvestUnit %in% c("Kg", "Kgs", "1 kg", "kg"), "Kilograms", otherNormalHarvestUnit),
+    otherNormalHarvestUnit = ifelse(otherNormalHarvestUnit %in% c("Tonnes", "2t", "tonne"), "Tonnes", otherNormalHarvestUnit),
+    otherNormalHarvestUnit = ifelse(otherNormalHarvestUnit %in% c("Quarter an acre", "1.5 Acres"), "Acres", otherNormalHarvestUnit),
+    otherNormalHarvestUnit = str_remove_all(otherNormalHarvestUnit, "\\b[NaNA]\\b")
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$otherNormalHarvestUnit)
+```
+
+
+### Use values in 12. otherNormalHarvestUnit to replace 11. normalHarvestUnit == Other (specify)
+### Format with sentence case.  
+### Format as factor.
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    normalHarvestUnit = str_replace_all(normalHarvestUnit, "other \\(specify\\)",
+                                               replacement = otherNormalHarvestUnit),
+    normalHarvestUnit = str_to_sentence(normalHarvestUnit),
+    normalHarvestUnit = factor(normalHarvestUnit)
+    )
+
+unique(ssu_secb_clean$normalHarvestUnit)
+
+```
+
+
+
+
+## 13. HarvestQuantity2022
+
+
+```{r}
+unique(HarvestQuantity2022)
+```
+
+```{r, include=FALSE}
+
+names(ssu_secb_clean)
+```
+
+
+
+```{r}
+
+# Filter rows to crosscheck
+hq2022_rows_to_verify <- ssu_secb_clean %>%
+  select(c(1:2, 4, 6, 12:14))%>%
+  filter(HarvestQuantity2022 %in% c("40 bags", "30 bags", "1 acre of maize is sold green. 1.7 dried 28 bags", "3 per tree per year", "15 bags", "20bags per acre", "3500 Kg per acre", "1.5 bags per acre" ))
+
+hq2022_rows_to_verify
+
+```
+
+
++ Replace id == 684858 and HarvestQuantity2022 "1 acre of maize is sold green. 1.7 dried 28 bags" with 28.  
++ **For id == 713647 and HarvestQuantity2022 == "3 per plant", how many plants does the farmer have. (For now set to 1 plant)**  
+Change corresponding HarvestUnit2022 from count to "Kilograms".  
++ For id == 704930 and HarvestQuantity2022 == "20bags per acre", replace with (20*5 acres of land occupied by crop).  
++ For id == 736773 and HarvestQuantity2022 == "3500 Kg per acre", replace corresponding HarvestUnit2022 (count) with kg since 1 acre is allocated to crop.  
++ For id == 731742 and HarvestQuantity2022 == "1.5 bags per acre", replace with (1.5*2 acres of land occupied by crop).  
++ Remove all non-numeric characters except decimal point (if any).  
++ Format HarvestQuantity2022 as numeric.  
+
+
+
+
+```{r}
+
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    HarvestUnit2022 = if_else(respondentID == 713647, "Kilograms", HarvestUnit2022),
+    HarvestQuantity2022 = case_when(
+      respondentID == 684858 & HarvestQuantity2022 == "1 acre of maize is sold green. 1.7 dried 28 bags" ~ "28",
+      respondentID == 713647 & str_detect(HarvestQuantity2022, "3 per plant") ~ as.character(as.numeric(str_extract(HarvestQuantity2022, "\\d+")) * 1),
+      respondentID == 704930 & HarvestQuantity2022 == "20bags per acre" ~ as.character((20 * 5)),
+      respondentID == 731742 & HarvestQuantity2022 == "1.5 bags per acre" ~ as.character((1.5 * 2)),
+      TRUE ~ HarvestQuantity2022 # If none of the specified conditions are satisfied, then retain the original value of HarvestUnit2022
+    ),
+    HarvestQuantity2022 = as.numeric(str_remove_all(HarvestQuantity2022, "[^0-9.]")),
+    HarvestUnit2022 = if_else(respondentID == 736773, "Kilograms", HarvestUnit2022)
+    
+  )
+
+```
+
+
+
+
+```{r}
+ssu_secb_clean$HarvestQuantity2022
+```
+
+
+```{r}
+ssu_secb_clean$HarvestUnit2022
+```
+
+
+
+
+## 14. HarvestFrequency2022
+
+
+```{r}
+unique(HarvestFrequency2022)
+```
+
+
++ Remove "\\d+."  
++ ***Other column is missing.***  
++ Format as factor.  
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    HarvestFrequency2022 = str_replace_all(HarvestFrequency2022, "(?i)\\bna\\b", ""),
+    HarvestFrequency2022 = str_remove(HarvestFrequency2022, "\\d+. "), # Removes only the first instance of the pattern
+    HarvestFrequency2022 = factor(HarvestFrequency2022, levels = intersect(harvestFrequencyLevels, unique(HarvestFrequency2022)), ordered = TRUE)
+    
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$HarvestFrequency2022)
+```
+
+
+
+
+## 15. HarvestUnit2022
+
+
+```{r}
+unique(HarvestUnit2022)
+```
+
+
++ Remove [0-9]=.  
++ Replace other (specify).  (***NB: The column 16. "12=other (specify)" is initially blank despite having "12=other (specify)" selected in HarvestUnit2022.***)  
+***It has however been mutated under 17. marketPricePerUnit. Therfore, perfom step two after 17. marketPricePerUnit.***
++ Format to sentence case.  
++ Format as factor.
+
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    HarvestUnit2022 = str_replace_all(HarvestUnit2022, "(?i)na", ""),
+    HarvestUnit2022 = str_remove_all(HarvestUnit2022, "\\d+=") #,
+    #HarvestUnit2022 = factor(HarvestUnit2022, levels = cropcodes_levels)
+    
+  )
+
+unique(ssu_secb_clean$HarvestUnit2022)
+
+```
+
+
+"Kilograms" from HarvestQuantity2022. (Mutated 15. HarvestUnit202 from 13. HarvestQuantity2022)
+
+
+
+## 16. other2022HarvestUnit
+
+```{r}
+
+unique(ssu_sec_b$other2022HarvestUnit)
+
+```
+
+From raw data, this column is empty.
+It was however been mutated under 17. marketPricePerUnit.
+
+
+
+
+It was however been mutated under 17. marketPricePerUnit
+
+
+
+## 17. marketPricePerUnit
+
+
+```{r}
+unique(marketPricePerUnit)
+```
+
+
+
+
+```{r}
+
+# Filter rows to crosscheck
+
+mppu_rows_to_verify <- ssu_secb_clean %>%
+  select(c(1:2, 4, 6, 11:16)) %>%
+  filter(marketPricePerUnit %in% c("90k for the green maize, dried 180 per Gorogoro(2Kg)", "0", "not sure", "Tonnes", "Ksh. 70 per Kg", "Kgs", "Ksh.20 per Kg and a bonous of 31 bob per Ksh", "1500-4000", "300/2kg", "16 per kg", "Ksh. 4000 per bag", "Quarter acre", "Ksh. 5500", "Ksh. 80 per Kg", "Ksh. 85 per KG", "100000 for 1.5 acres"))
+
+mppu_rows_to_verify
+
+```
+
+
++ For respondentID == 684858 replace marketPricePerUnit == "90k for the green maize, dried 180 per Gorogoro(2Kg)" with "8100".  
++ For respondentID == 687124 remove marketPricePerUnit == "0".  
++ *For respondentID == 909152 remove marketPricePerUnit == "not sure".*  
++ *For respondentID == 654540 remove marketPricePerUnit == "Tonnes".*  
++ For respondentID == 654540 replace other2022HarvestUnit with "Tonnes".  
++ For respondentID == 569813 replace marketPricePerUnit == "Ksh. 70 per Kg" with "6300".  
++ *For respondentID == 729806 remove marketPricePerUnit == "Kgs".*  
++ for respondentID == 210498 replace marketPricePerUnit == "1500-4000" with "2750" (the midpoint).
++ For respondentID == 729806 replace other2022HarvestUnit with "Kilograms".  
++ For respondentID == 713647 replace marketPricePerUnit == "Ksh.20 per Kg and a bonous of 31 bob per Ksh" with "20".  
++ For respondentID == 698526 replace marketPricePerUnit == "300/2kg" with "13500".  
++ For respondentID == 606358 replace other2022HarvestUnit with "Kilograms".  
++ *For respondentID == 606358 replace marketPricePerUnit == "16 per kg" with "16".*  
++ *For respondentID == 704930 replace marketPricePerUnit == "Ksh. 4000 per bag" with 4000.*  
++ *For respondentID == 644784 remove marketPricePerUnit == "Quarter acre".*  
++ *For respondentID == 677321 replace marketPricePerUnit == "Ksh. 5500" with 5500.*
++ *For respondentID == 736773 replace marketPricePerUnit == "Ksh. 80 per Kg" with "80".*
++ For respondentID == 731742 replace marketPricePerUnit == "Ksh. 85 per KG" with "7650".  
++ For respondentID == 740127 replace other2022HarvestUnit with "Acres". 
++ For respondentID == 740127 replace marketPricePerUnit == "100000 for 1.5 acres" with "66667".  
++ Remove all non-numeric characters except decimal point (if any). (This will address all italicized above.) 
++ Format marketPricePerUnit as numeric.
+  
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    marketPricePerUnit = case_when(
+      respondentID == 684858 & marketPricePerUnit == "90k for the green maize, dried 180 per Gorogoro(2Kg)" ~ "8100",
+      # respondentID == 687124 ~ str_remove(marketPricePerUnit, "0"),
+      # respondentID == 909152 ~ str_remove(marketPricePerUnit, "not sure"),
+      # respondentID == 654540 ~str_remove(marketPricePerUnit,"Tonnes"),
+      respondentID == 569813 ~ str_replace(marketPricePerUnit, "Ksh. 70 per Kg", "6300"),
+      respondentID == 210498 ~ str_replace(marketPricePerUnit, "1500-4000", "2750"),
+      #respondentID == 729806 ~ str_remove(marketPricePerUnit, "Kgs"),
+      respondentID == 713647 ~ str_replace(marketPricePerUnit, "Ksh.20 per Kg and a bonous of 31 bob per Ksh", "20"),
+      respondentID == 698526 ~ str_replace(marketPricePerUnit, "300/2kg", "13500"),
+      #respondentID == 644784 ~ str_remove(marketPricePerUnit, "Quarter acre"),
+      respondentID == 731742 ~ str_replace(marketPricePerUnit, "Ksh. 85 per KG", "7650"),
+      respondentID == 740127 ~ str_replace(marketPricePerUnit, "100000 for 1.5 acres", "66667"),
+      TRUE ~ marketPricePerUnit # If none of the specified conditions are satisfied, then retain the original value of marketPricePerUnit
+     ),
+     
+     marketPricePerUnit = as.numeric(str_remove_all(marketPricePerUnit, "[^0-9]")),
+     
+    other2022HarvestUnit = as.character(ssu_secb_clean$other2022HarvestUnit), # Convert from logical.
+    
+    other2022HarvestUnit = case_when(
+       
+       respondentID == 654540 ~ replace_na(other2022HarvestUnit, "Tonnes"),
+       respondentID == 729806 ~ replace_na(other2022HarvestUnit, "Kilograms"),
+       respondentID == 606358 ~ replace_na(other2022HarvestUnit, "Kilograms"),
+       respondentID == 740127 ~ replace_na(other2022HarvestUnit, "Acres") 
+       
+     )
+    
+
+  )
+
+```
+
+
+
+```{r}
+ssu_secb_clean$marketPricePerUnit
+```
+
+
+```{r}
+ssu_secb_clean$other2022HarvestUnit
+```
+
+
++ Replace with other2022HarvestUnit.  
++ Format HarvestUnit2022 as factor.
+
+
+
+## Replace other (specify) in 15. HarvestUnit2022 with mutated other2022HarvestUnit.  
+### Format with sentence case.  
+### Format as factor.
+
+
+```{r}
+unique(ssu_secb_clean$other2022HarvestUnit)
+```
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    HarvestUnit2022 = str_replace_all(HarvestUnit2022, "other \\(specify\\)",
+                                               replacement = other2022HarvestUnit),
+    HarvestUnit2022 = str_to_sentence(HarvestUnit2022),
+    HarvestUnit2022 = factor(HarvestUnit2022)
+    )
+
+unique(ssu_secb_clean$normalHarvestUnit)
+
+```
+
+
+
+
+
+## 18. disposalDecisionMaker
+
+```{r}
+unique(disposalDecisionMaker)
+```
+
+
++ Remove "0-9=".  
++ Format as factor.  
++ No other (specify).
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    disposalDecisionMaker = str_replace_all(disposalDecisionMaker, "(?i)na", ""),
+    disposalDecisionMaker = str_remove_all(disposalDecisionMaker, "\\d+="),
+    disposalDecisionMaker = factor(disposalDecisionMaker, 
+                                   levels = intersect(decisionMakerLevels, unique(disposalDecisionMaker)),
+                                   exclude = "Other (Specify)")
+    
+  )
+
+
+```
+
+
+```{r}
+unique(ssu_secb_clean$disposalDecisionMaker)
+```
+
+
+
+## 19. otherDisposalDecisionMaker
+
+
+```{r}
+unique(otherDisposalDecisionMaker)
+```
+
++ Remove NA, "n/a", "N/A", "none".  
++ The resulting column is empty.
+
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    otherDisposalDecisionMaker = ifelse(is.na(otherDisposalDecisionMaker) | otherDisposalDecisionMaker %in% c("n/a", "N/A", "none"), "", otherDisposalDecisionMaker)
+
+  )
+
+```
+
+
+```{r}
+unique(ssu_secb_clean$otherDisposalDecisionMaker)
+```
+
+
+## 20. mainLivestockRaised
+
+```{r}
+unique(mainLivestockRaised)
+```
+
++ Remove "0-9=".  
++ ***Confirm all levels.***  
++ Format as factor.  
++No other (specify).  
+
+
+
+```{r}
+livestockLevels <- c("Dairy Cow", "Beef Cattle", "Dairy Goats", "Chickens", "Pigs")
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    mainLivestockRaised = str_replace_all(mainLivestockRaised, "(?i)na", ""),
+    mainLivestockRaised = str_remove_all(mainLivestockRaised, "\\d+="),
+    mainLivestockRaised = factor(mainLivestockRaised)#, levels = livestockLevels)
+    
+  )
+
+
+```
+
+
+
+```{r}
+
+unique(ssu_secb_clean$mainLivestockRaised)
+
+```
+
+
+
+## 21. otherMainLivestockRaised
+
+This column is blank.
+
+
+
+
+## ***22. livestockSize***
+
+
+```{r}
+unique(livestockSize)
+```
+
+
++ Check outliers.  
+
+
+
+```{r}
+# Calculate the mean and the five number summary of livestockSize
+
+ssu_secb_clean %>%
+  group_by(mainLivestockRaised) %>%
+  summarise(
+    frequency = n(),
+    minimum = min(livestockSize, na.rm = TRUE),
+    q1 = quantile(livestockSize, 0.25, na.rm = TRUE),
+    median = quantile(livestockSize, 0.5, na.rm = TRUE),
+    average = mean(livestockSize, na.rm = TRUE),
+    q3 = quantile(livestockSize, 0.75, na.rm = TRUE),
+    maximum = max(livestockSize, na.rm = TRUE)
+  ) %>%
+  filter(!is.na(mainLivestockRaised))
+
+```
+
+
+```{r}
+# Box-plot of livestockSize
+ 
+ssu_secb_clean %>%
+  filter(!is.na(livestockSize)) %>%
+  group_by(mainLivestockRaised) %>%
+  ggplot(aes(x = mainLivestockRaised, y = livestockSize)) +
+  geom_boxplot(outlier.color = "red") +
+  labs(title = "Livestock Size Box Plot")
+
+
+```
+
+
+
+
+### Filter rows with outliers
+
+
+
+```{r}
+
+# # Identify outliers based on boxplot statistics
+ 
+# outliers_lss <- boxplot.stats(ssu_secb_clean$livestockSize[!is.na(ssu_secb_clean$livestockSize)])$out
+# 
+# # # # Display rows with outliers in livestockSize column
+#  
+#   rows_with_outliers_lss <- ssu_secb_clean %>%
+#     filter(livestockSize %in% outliers_lss)
+#   
+#   rows_with_outliers_lss
+#  
+  #kable(rows_with_outliers_lss)
+  
+```
+
+
+
+
+```{r}
+rows_without_outliers_lss <- ssu_secb_clean %>%
+    filter(!(livestockSize %in% outliers))
+
+rows_without_outliers_lss %>%
+ggplot(aes(y = livestockSize)) +
+     geom_boxplot() +
+     labs(title = "Livestock Size Box Plot")
+
+
+```
+
+
+
+
+
+
+
+## 23. livestockKeepingDecisionMaker
+
+```{r}
+unique(livestockKeepingDecisionMaker)
+```
+
+
+
++ Remove "0-9=".  
++ Format as factor.   
++ No other (specify).  (implying 24 is blank)
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    livestockKeepingDecisionMaker = str_replace_all(livestockKeepingDecisionMaker, "(?i)na", ""),
+    livestockKeepingDecisionMaker = str_remove_all(livestockKeepingDecisionMaker, "\\d+="),
+    livestockKeepingDecisionMaker = factor(livestockKeepingDecisionMaker, levels = intersect(decisionMakerLevels, unique(livestockKeepingDecisionMaker)))
+                                           
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$livestockKeepingDecisionMaker)
+```
+
+
+
+## 24. otherLivestockKeepingDecisionMaker
+
+This column is blank.
+
+
+
+## 25. mainProductOfLivestock
+
+
+```{r}
+unique(mainProductOfLivestock)
+```
+
++ Format to title case.  
++ Remove "NA" and "7".  
++ Replace "Milk3", "millk" with "Milk".  
++ ***"Milk, Ghee"; which is the main product?***  
++ Format as factor. ***Done after 26. normalLivestockProductQuantity*** 
+
+
+
+
+```{r}
+
+livestockProductsLevels <- c("Meat", "Milk", "Milk, Ghee", "Beef", "Eggs", "Goat", "Pig")
+  
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    mainProductOfLivestock = ifelse(mainProductOfLivestock %in% c( "NA", "7"), "", mainProductOfLivestock),
+    mainProductOfLivestock = str_replace_all(mainProductOfLivestock, c("Milk3" = "Milk", "millk" = "Milk")),
+    mainProductOfLivestock = str_replace_all(mainProductOfLivestock, "(?i)milk", "Milk"),
+    mainProductOfLivestock = str_to_title(mainProductOfLivestock)
+    #mainProductOfLivestock = factor(mainProductOfLivestock, levels = livestockProductsLevels) - done later
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$mainProductOfLivestock)
+```
+
++ Another level - pig - is added under 26. normalLivestockProductQuantity.
+
+## 26. normalLivestockProductQuantity
+
+
+```{r}
+unique(normalLivestockProductQuantity)
+```
+
+
+
+```{r}
+
+# Filter rows to crosscheck
+
+rows_to_verify_mlpq <- ssu_secb_clean %>%
+  select(c(1:2, 18:20, 23:26)) %>% # From names()
+  filter(normalLivestockProductQuantity %in% c("3/4 litre per day", "pig"))
+
+rows_to_verify_mlpq
+
+```
+
+
++ For respondentID == 56639 replace mainProductOfLivestock with "Pig".  
++ *For respondentID == 56639 remove normalLivestockProductQuantity == "Pig".*  
++ For respondentID == 697630 replace normalLivestockProductQuantity == "3/4 litre per day" with "273.75".  
++ Remove all non-numeric characters except decimal point (if any). (This will address all italicized above.) 
++ Format mainProductOfLivestock as numeric.
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    mainProductOfLivestock = case_when(
+       
+       respondentID == 56639 ~ str_replace(mainProductOfLivestock, "^$", "Pig"), 
+       TRUE ~ mainProductOfLivestock
+ 
+     ),
+    
+    normalLivestockProductQuantity = case_when(
+       
+       respondentID == 697630 ~ str_replace(normalLivestockProductQuantity, "3/4 litre per day", "273.75"),
+       TRUE ~ normalLivestockProductQuantity
+ 
+     ),
+    normalLivestockProductQuantity = as.numeric(str_remove_all(normalLivestockProductQuantity, "[^0-9.]"))
+ 
+  )
+
+```
+
+
+
+"" (empty string) alone returns error.  
+The regular expression `"^$"` is used.  
+The `^` matches the start of the string, and `$` matches the end of the string.  
+This effectively matches empty strings and replaces it with "Pig".  
+
+
+## Format 25. mainProductOfLivestock as factor. (***Done after 26. normalLivestockProductQuantity***) 
+
+
+```{r}
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+  mainProductOfLivestock = factor(mainProductOfLivestock) #, levels = livestockProductsLevels)
+)
+unique(ssu_secb_clean$mainProductOfLivestock)
+```
+
+
+
+```{r}
+ssu_secb_clean$normalLivestockProductQuantity
+```
+
+
+
+
+## 27. normalLivestockProductFrequency
+
+
+```{r}
+unique(normalLivestockProductFrequency)
+```
+
+
++ Remove "\\d+. "  
++ Format as factor.
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    normalLivestockProductFrequency = str_replace_all(normalLivestockProductFrequency, "(?i)\\bna\\b", ""),
+    normalLivestockProductFrequency = str_remove(normalLivestockProductFrequency, "\\d+. "), # Removes only the first instance of the pattern
+    normalLivestockProductFrequency = factor(normalLivestockProductFrequency, levels = intersect(harvestFrequencyLevels, unique(normalLivestockProductFrequency)), ordered = TRUE)
+    
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$normalLivestockProductFrequency)
+```
+
+
+
+
+
+## 28. normalLivestockProductUnit
+
+
+```{r}
+unique(normalLivestockProductUnit)
+```
+
+
+
++ Remove "0-9=".  
++ Format with title case. 
++ Replace "kilogram" with "Kilograms".
+ 
+ ***Following steps done after  29. otherNormalLivestockProductUnit.***
++ ***Column "77=other (specify)" is empty.***  
+Therefore "77=other (specify)" will be replaced with NAs.
++ Format as factor.
+
+
+```{r}
+
+livestockProductUnitsLevels <- c("Kilograms", "Liters", "Count")
+  
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    normalLivestockProductUnit = str_replace_all(normalLivestockProductUnit, "(?i)na", ""),
+    normalLivestockProductUnit = str_replace_all(normalLivestockProductUnit, "kilogram", "Kilograms"),
+    normalLivestockProductUnit = str_remove_all(normalLivestockProductUnit, "\\d+="),
+    normalLivestockProductUnit = str_to_title(normalLivestockProductUnit)#,
+    #normalLivestockProductUnit = factor(normalLivestockProductUnit)#, levels = livestockProductUnitsLevels)
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$normalLivestockProductUnit)
+```
+
+
+## 29. otherNormalLivestockProductUnit
+
+```{r}
+
+
+sum(is.na(otherNormalLivestockProductUnit))  #\\| # otherNormalLivestockProductUnit == "")
+```
+
+
+This column is blank
+
+
+## Replace 28. normalLivestockProductUnit == other (specify) with 29. otherNormalLivestockProductUnit.  
+***NB:Column "77=other (specify)" is empty.***  
+Therefore "77=other (specify)" will be replaced with NAs.
+## Format 28. normalLivestockProductUnit as factor.
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    normalLivestockProductUnit = str_replace_all(normalLivestockProductUnit, "Other \\(Specify\\)",
+                                               replacement = as.character(otherNormalLivestockProductUnit)),
+    normalLivestockProductUnit = str_to_sentence(normalLivestockProductUnit),
+    normalLivestockProductUnit = factor(normalLivestockProductUnit)
+    )
+
+unique(ssu_secb_clean$normalLivestockProductUnit)
+
+```
+
+
+
+
+
+## 30. livestockProduct2022Quantity
+
+
+```{r}
+unique(livestockProduct2022Quantity)
+```
+
+
+
+```{r}
+# Calculate the mean and the five number summary of hhsize
+
+ssu_secb_clean %>%
+  group_by(mainProductOfLivestock) %>%  #mainLivestockRaised) %>%
+  summarise(
+    frequency = n(),
+    minimum = min(livestockProduct2022Quantity, na.rm = TRUE),
+    q1 = quantile(livestockProduct2022Quantity, 0.25, na.rm = TRUE),
+    median = quantile(livestockProduct2022Quantity, 0.5, na.rm = TRUE),
+    average = mean(livestockProduct2022Quantity, na.rm = TRUE),
+    q3 = quantile(livestockProduct2022Quantity, 0.75, na.rm = TRUE),
+    maximum = max(livestockProduct2022Quantity, na.rm = TRUE)
+  ) %>%
+  filter(!is.na(mainProductOfLivestock))
+  #filter(!is.na(mainLivestockRaised))
+
+```
+
+
+```{r}
+# Box-plot of livestockProduct2022Quantity
+ 
+ssu_secb_clean %>%
+  filter(!is.na(livestockProduct2022Quantity) & !is.na(mainProductOfLivestock)) %>%
+  group_by(mainProductOfLivestock) %>%
+  ggplot(aes(x = mainProductOfLivestock, y = livestockProduct2022Quantity)) +
+  geom_boxplot(outlier.color = "red") +
+  labs(title = "Livestock Product Quantity 2022 Box Plot")
+
+
+```
+
+
+
+
+```{r}
+
+# # Identify outliers based on boxplot statistics
+
+outliers_lp2022q <- boxplot.stats(ssu_secb_clean$livestockProduct2022Quantity[!is.na(ssu_secb_clean$livestockProduct2022Quantity)])$out
+
+  
+# # # Display rows with outliers 
+ 
+  rows_with_outliers_lp2022q <- ssu_secb_clean %>%
+    filter(livestockProduct2022Quantity %in% outliers_lp2022q)
+  
+  rows_with_outliers_lp2022q
+ 
+  #kable(rows_with_outliers)
+  
+```
+
+
+***Are the values in livestockProduct2022Quantity for the whole year?***
+
+
+
+```{r}
+rows_without_outliers_lp2022q <- ssu_secb_clean %>%
+    filter(!(livestockProduct2022Quantity %in% outliers_lp2022q) & !is.na(mainProductOfLivestock))
+
+rows_without_outliers_lp2022q %>%
+group_by(mainLivestockRaised) %>%
+  ggplot(aes(x = mainProductOfLivestock, y = livestockProduct2022Quantity)) +
+     geom_boxplot() +
+     labs(title = "Livestock Product 2022 Quantity Box Plot")
+
+
+```
+
+
+
+
+## 31. livestockProduct2022Frequency
+
+
+```{r}
+unique(livestockProduct2022Frequency)
+```
+
+
++ Remove "\\d+. "  
++ Format as factor.  
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    livestockProduct2022Frequency = str_replace_all(livestockProduct2022Frequency, "(?i)\\bna\\b", ""),
+    livestockProduct2022Frequency = str_remove(livestockProduct2022Frequency, "\\d+. "), # Removes only the first instance of the pattern
+   livestockProduct2022Frequency = factor(livestockProduct2022Frequency, levels = intersect(harvestFrequencyLevels, livestockProduct2022Frequency), ordered = TRUE) 
+    
+  )
+
+```
+
+
+
+
+```{r}
+unique(ssu_secb_clean$livestockProduct2022Frequency)
+```
+
+
+
+
+## 32. livestockProduct2022Unit
+
+
+```{r}
+unique(livestockProduct2022Unit)
+```
+
+
++ Remove "0-9=".  
++ No other (specify), meaning 33 is empty.
++ Format with title case.  
++Format as factor.  
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    livestockProduct2022Unit = str_replace_all(livestockProduct2022Unit, "(?i)na", ""),
+    livestockProduct2022Unit = str_remove_all(livestockProduct2022Unit, "\\d+="),
+    livestockProduct2022Unit = str_to_title(livestockProduct2022Unit),
+    livestockProduct2022Unit = factor(livestockProduct2022Unit)#, levels = livestockProductUnitsLevels)
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$livestockProduct2022Unit)
+```
+
+
+## 33. otherLivestockProduct2022Unit
+
+This column is blank.
+
+
+
+## 34. unitPrice
+
+
+```{r}
+unique(unitPrice)
+```
+
+
+
+```{r}
+
+# Filter rows to crosscheck
+
+rows_to_verify_up <- ssu_secb_clean %>%
+  select(c(1:2, 16, 19, 22:30)) %>% # From names()
+  filter(unitPrice %in% c("0", "2000-7000"))
+
+rows_to_verify_up
+
+```
+
++ ***What does unitPrice == 0 mean?***  For now removed.
++ Replace unitPrice == "2000-7000" with "4500" (midpoint).  
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    unitPrice = case_when(
+      
+      respondentID == 691458 ~ str_remove(unitPrice, "0"),
+      respondentID == 56639 ~ str_replace(unitPrice, "2000-7000", "4500"),
+      
+      TRUE ~ unitPrice # If none of the specified conditions are satisfied, then retain the original value of unitPrice
+     ),
+     
+     unitPrice = as.numeric(str_remove_all(unitPrice, "[^0-9.]")),
+
+  )
+
+```
+
+
+
+```{r}
+ssu_secb_clean$unitPrice
+```
+
+
+
+## 35. livestockUseDecisionMakerB15
+
++ Changed livestockKeepDecisionMakerB15 to livestockUseDecisionMakerB15.  
+
+
+
+```{r}
+unique(livestockUseDecisionMakerB15)
+```
+
+
+
++ Remove "0-9=".  
++ Remove extra spaces.  
++ No other (specify).
++ Format as factor.  
+
+
+
+```{r}
+
+ssu_secb_clean <- ssu_secb_clean %>%
+  mutate(
+    
+    livestockUseDecisionMakerB15 = str_replace_all(livestockUseDecisionMakerB15, "(?i)na", ""),
+    livestockUseDecisionMakerB15 = str_remove_all(livestockUseDecisionMakerB15, "\\d+="), 
+    livestockUseDecisionMakerB15 = str_squish(livestockUseDecisionMakerB15),
+    livestockUseDecisionMakerB15 = factor(livestockUseDecisionMakerB15, levels = intersect(decisionMakerLevels, unique(livestockUseDecisionMakerB15)))
+  )
+
+```
+
+
+
+```{r}
+unique(ssu_secb_clean$livestockUseDecisionMakerB15)
+```
+
+
+
+### Column labels
+
+After modifying the data, we can now assign labels to all the column names.
+
+
+```{r}
+
+names(ssu_secb_clean)
+```
+
+```{r}
+ # Define column labels
+
+ column_labels <- c(
+   
+   index = "Index",
+   respondentID = "E1. Respondent ID",
+   mainFarmingActivity = "B1. What is your MAIN farming activity in 2022?",
+   mainCropName = "B2. What is the name of the MAIN crop you produce?",
+   agriculturalLandSize = "B3. What is the size of your agricultural land in acres?",
+   mainCropLandSize = "B4. What area of land does B2 occupy in acres?",
+   mainCropCultivationDecisionMaker = "B5. Who mainly decided how to cultivate B2?",
+   otherCultivationDecisionMaker = "77=Other (specify)...8",
+   normalHarvestQuantity = "B6. On normal main cropping season, how much B2 do you harvest?",
+   normalHarvestFrequency = "B7.1. Frequency",
+   normalHarvestUnit = "B7.2 Unit",
+   otherNormalHarvestUnit = "12=other (specify)...11",
+   HarvestQuantity2022 = "B8. During the main cropping season 2022, how much B2 did you harvest?",
+   HarvestFrequency2022 = "B9.1. Frequency",
+   HarvestUnit2022 = "B9.2 Unit",
+   other2022HarvestUnit = "12=other (specify)...14",
+   marketPricePerUnit = "B10. What was the prevailing market price per unit for B2? [KES]",
+   disposalDecisionMaker = "B11. Who mainly made the decision on how to dispose of B2?",
+   otherDisposalDecisionMaker = "77=Other (specify)...17",
+   mainLivestockRaised = "B12. Which livestock did you MAINLY raise in 2022?",
+   otherMainLivestockRaised = "77=Other (specify)...19",
+   livestockSize = "B13. What was the size of B12?",
+   livestockKeepingDecisionMaker = "B14. Who mainly decided how to keep B12?",
+   otherLivestockKeepingDecisionMaker = "77=Other (specify)...22",
+   mainProductOfLivestock = "B15. What was the main product of B12?",
+   normalLivestockProductQuantity = "B16. In a normal year, how much of B15 do you get?",
+   normalLivestockProductFrequency = "B17.1. Frequency",
+   normalLivestockProductUnit = "B17.2 Unit",
+   otherNormalLivestockProductUnit = "77=other (specify)...26",
+   livestockProduct2022Quantity = "B18. How much of B15 did you get in 2022?",
+   livestockProduct2022Frequency = "B19.1. Frequency",
+   livestockProduct2022Unit = "B19.2 Unit",
+   otherLivestockProduct2022Unit = "77=other (specify)...29",
+   unitPrice = "B20. What was the unit price",
+   livestockUseDecisionMakerB15 = "B21. Who mainly decided how to use B15?" # Changed "keep" to "use"
+
+     )
+
+```
+
+
+
+
+```{r}
+# Set variable/column labels
+ dim(ssu_secb_clean) # 106  36
+
+    ssu_secb_clean <- ssu_secb_clean %>%
+  select(-is_cropland_leq_agricland) %>%
+      set_variable_labels(.labels = column_labels) # Requires package labelled
+
+```
+
+
+Using the function View() to open the new data in a spreadsheet reveals the column names and labels.
+
+```{r}
+
+View(ssu_secb_clean)
+
+```
+
+
+
+```{r}
+
+ssu_sec_b_arch <- ssu_secb_clean
+
+# Drop un needed columns and save clean data
+
+# ssu_sec_e_arch <- ssu_sece_clean %>%
+#   select(c(1:2, 5:6, 9, 12:13))
+
+# HINT: Passing View() to a pipeline produces NULL data structure.
+# Avoid the function within a pipeline
+
+
+#data_codebook(ssu_sec_b_arch)
+
+```
+
+
+## Generate a data dictionary
+
+Generate a data dictionnary and search for variables with `look_for()`
+
+Requires package labelled.
+
+
+
+```{r}
+# Data dictionary
+
+
+ ssu_B1sec_b_dict <- look_for(ssu_sec_b_arch, labels = TRUE, values = TRUE) %>%
+  select(-c(missing, value_labels))
+# 
+# # Fomart table
+# 
+# #flextable(data_dict)
+# 
+# #gt(data_dict)
+# 
+ #kable(ssu_B1sec_a_dict)
+gt(ssu_B1sec_b_dict)
+
+```
+
+
+
+## Export data to CSV
+
+
+```{r}
+
+readr::write_csv(ssu_sec_b_arch, "ssu_sec_b_arch.csv")
+
+```
+
+
+
+

@@ -1,0 +1,861 @@
+---
+title: 'DATA CLEANING: BATCH1 - SSU SECTION A'
+author: "Njambi"
+date: "January 26, 2024"
+output: html_document
+#encoding: UTF-8
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+## Loading necessary libraries
+
+```{r, include=FALSE}
+
+library(tidyverse) # includes the dplyr, ggplot2, tidyr, readr, stringr, forcats, tibble packages
+library(readxl)
+library(Hmisc)
+library(labelled)
+library(magrittr)
+library(datawizard)
+library(gtsummary)
+library(gt)
+library(kableExtra)
+library(flextable)
+library(splitstackshape)
+
+#library(ggplot2)
+#library(tidyr)
+#library(tibble)
+#library(dplyr)
+#library(stringr)
+
+```
+
+
+## Set the working directory
+
+```{r, include=FALSE}
+# Check the current working directory
+
+getwd()
+```
+
+
+```{r, include=FALSE}
+# Set working directory (Not necessary since the current wd is the correct wd)
+
+setwd("C:\\Users\\awanjau\\OneDrive - CGIAR\\Alliance\\Alliance_2023\\iShamba_SSU\\SSU_Weather_SurveyAnalysis")
+```
+
+## Loading data
+
+```{r}
+# Read a csv file
+
+ssu_sec_a <- read_csv("ssu_sec_a.csv") # Use this code when the csv file is in the set working directory
+
+#display portion of the data
+
+#View(ssu_sec_c)
+```
+
+
+## Understanding data at hand (Screening)
+
+
+```{r}
+# Check the dimension of the data
+
+dim(ssu_sec_a)
+```
+
+
+### Generate a codebook for the data
+
+Let's now get an overview of all variables and some more information about each variable (e.g. labels, values or value range, frequencies, missing values).  
+We can achieve this by using data_codebook().
+
+
+```{r, include=FALSE}
+
+# Codebook 
+# Requires package datawizard
+
+data_codebook(ssu_sec_a)
+
+# 34 of 40 variables shown implies that there could be empty columns in the data.
+
+```
+
+## Check empty columns
+
+```{r}
+
+# Requires package datawizard
+
+empty_columns(ssu_sec_a)
+
+# There are 6 empty columns in the data
+
+```
+
+
+## Drop empty columns
+
+
+```{r}
+
+# ssu_sec_a <- remove_empty_columns(ssu_sec_a)
+# 
+# dim(ssu_sec_a)
+# 
+# # There are 34 columns now.
+```
+
+
+
+
+## Check duplicate columns
+
+```{r}
+
+duplicate_columns <- ssu_sec_a[, duplicated(names(ssu_sec_a))]
+
+#ssu_seca_clean[, empty_columns(ssu_seca_clean)]
+
+# Print the names of duplicate columns
+
+print(names(duplicate_columns))
+
+# There are no duplicate columns.
+
+```
+
+
+
+## Check empty rows
+
+```{r}
+
+# Requires package datawizard
+
+empty_rows(ssu_sec_a)
+
+# There are no empty rows in the data.
+
+
+```
+
+
+
+# Check for duplicate rows
+
+
+```{r}
+
+duplicate_rows <- duplicated(ssu_sec_a) | duplicated(ssu_sec_a, fromLast = TRUE)
+
+# Display the duplicate rows
+
+print(ssu_sec_a[duplicate_rows, ])
+
+# There are no duplicate rows
+
+```
+
+
+
+
+```{r, include=FALSE}
+# Obtain the column names
+
+names(ssu_sec_a)
+
+# Column A6 was dropped
+
+```
+
+
+
+### Renaming the columns
+
+The column names are too long for analysis.  
+For ease of subsequent analysis, we will conduct this part of data cleaning process as early as now, before the data cleaning section.  
+
+To create column names and labels, we create new column names, then use the original (long) names as column labels.  
+
+                                                                                                                                                                                                          
+
+
+```{r}
+
+ssu_sec_a <- ssu_sec_a %>%
+  rename(
+    index = "index",
+    respondentID = "E1. Respondent ID",
+    watchedForecast = "A1. Have you watched or received any weather forecast or agro-advisory in the past 12 months?",
+    interestedInForecast = "A2.1 Are you interested in receiving weather forecast or agro-advisory?",
+    preferredAdvisory = "A2.2. What kind of advisory would you want to receive?",
+    otherAdvisory = "77=Other (specify)...6",
+    preferredChannel = "A3. What is your preferred channel for receiving weather forecasts or agro-advisory information?",
+    otherChannel = "77=Other (please specify)",
+    purposeForInfo = "A4. What is the main purpose for which you require weather information?",
+    otherPurposeForInfo = "77=Other (specify)...10",
+    importantWeatherElement = "A5. What is the MOST important element of the weather forecast that you would like to receive?",
+    otherImportantWeatherElement = "77=Other (specify)...12",
+    notInterestedReason = "A6. What is the primary reason for not being interested in receiving weather forecasts or agro-advisory?",
+    otherNotInterestedReason = "77=Other (specify)...14",
+    sourcesOfForecasts = "A7. What are the sources of weather forecasts or agro-advisories you have received in the past 12 months?",
+    otherSourcesOfForecasts =  "77=Other (specify)...16",
+    watchedShambaShapeUp = "Has watched Shamba shape-up weather news segment?",
+    watchingDuration =  "A8. How long have you been watching the Shamba Shape Up Weather News Segment?\r\r\n\r\r\nPlease remind the farmer that this is the segment when a map of Kenya is displayed with weather information during the shamba shape up program.",
+    watchWithOthers = "A9.1. Who do you usually watch the Shamba Shape-Up news segment with?",
+    householdMembersWatching = "A9.2. On average, how many members of your household do you watch the Shamba Shape Up weather news segment with?",
+    watchFrequency = "A10. On a scale of 1 to 5, with 5 being 'always', how often do you watch the Shamba Shape-Up weather news segment?",
+    watchPlatforms = "A11. On which platform(s) do you watch or receive weather forecast information or advisory?",
+    otherWatchPlatforms = "77=Other (specify)...23",
+    preferredWatchPlatform = "A12. From the above platforms, which is your MOST preferred way to watch or receive weather forecast information or advisory?",
+    otherPreferredWatchPlatform = "77=Other (specify)...25",
+    mostImportantForecastElement = "A13. What is your MOST important element of the weather forecast to you?",
+    otherImportantForecastElement = "77=Other (specify)...27",
+    timelyAdvisory = "A14. Was the weather forecast information/advisory timely to guide your farming activities?",
+    accuracyRating = "A15. How would you rate the accuracy of the weather forecast?",
+    changedPractices = "A16. Have you changed your practices/decisions following the advisory you received?",
+    changedPracticeDetails = "A17. How did you change your practice/decision?",
+    otherChangedPracticeDetails = "77=Other (specify)...32",
+    FarmingActivityChangesNoticed = "A18.1. Did you notice any change in your farming activities after making changes in your farming practice following the forecast/advisory?",
+    positiveChangesNoticed = "A18.2. What kind of positive change did you notice?",
+    otherPositiveChangesNoticed = "77=Other (specify)....35",
+    negativeChangesNoticed = "A19.1. Have you noticed negative effects after making changes in your farming practice following the forecast/advisory?",
+    negativeChangeDetails = "A19.2. Please specify the kind of negative effects.",
+    reasonsForNoChanges = "A20. What are the main reasons why you did not make any changes, despite receiving the advisory?",
+    otherReasonsForNoChanges = "77=Other (specify)....39",
+    matchedWithExperience = "A21. Did the weather forecast information or advisory match with your experience/knowledge?",
+    suggestionsForImprovement = "A22. What are your suggestions to improve weather forecasts or agro-advisory services?"              
+  )
+
+```
+
+
+
+Column names are now short and standard.
+
+
+
+## Codedebook 2
+
+```{r}
+
+# Codebook 
+# Requires package datawizard
+
+gt(data_codebook(ssu_sec_a))
+
+
+```
+
+
+
+
+## Clean all categorical variables
+
++ Remove "[0-9=]" from all categorical variables. (Except watchingDuration).  
++ Remove [0-9=] from watchingDuration
++ Remove "." at the end from all categorical variables except "watchingDuration".  
++ Change "watchedShambaShapeUp" from upper to title case.  
+
+
+```{r}
+
+ssu_seca_clean <- ssu_sec_a %>%
+  mutate(
+
+    watchedForecast = str_remove_all(watchedForecast, "[0-9=]|\\."),
+    interestedInForecast = str_remove_all(interestedInForecast, "[0-9=]|\\."),
+    preferredAdvisory = str_remove_all(preferredAdvisory, "[0-9=]|\\."),
+    preferredChannel = str_remove_all(preferredChannel, "[0-9=]|\\."),
+    purposeForInfo = str_remove_all(purposeForInfo, "[0-9=]|\\."),
+    importantWeatherElement = str_remove_all(importantWeatherElement, "[0-9=]|\\."),
+    sourcesOfForecasts = str_remove_all(sourcesOfForecasts, "[0-9=]|\\."),
+    watchedShambaShapeUp = str_remove_all(watchedShambaShapeUp, "[0-9=]"),
+    watchedShambaShapeUp =str_to_title(watchedShambaShapeUp),
+    watchingDuration = str_remove_all(watchingDuration, "\\d+="),
+    watchWithOthers = str_remove_all(watchWithOthers, "[0-9=]|\\."),
+    watchFrequency = str_remove_all(watchFrequency, "[0-9=]|\\."),
+    watchPlatforms	 = str_remove_all(watchPlatforms, "[0-9=]|\\."),
+    preferredWatchPlatform = str_remove_all(preferredWatchPlatform, "[0-9=]|\\."),
+    mostImportantForecastElement = str_remove_all(mostImportantForecastElement, "[0-9=]|\\."),
+    timelyAdvisory = str_remove_all(timelyAdvisory, "[0-9=]|\\."),
+    accuracyRating = str_remove_all(accuracyRating, "[0-9=]|\\."),
+    changedPractices = str_remove_all(changedPractices, "[0-9=]|\\."),
+    changedPracticeDetails	 = str_remove_all(changedPracticeDetails, "[0-9=]|\\."),
+    FarmingActivityChangesNoticed = str_remove_all(FarmingActivityChangesNoticed, "[0-9=]|\\."),
+    positiveChangesNoticed = str_remove_all(positiveChangesNoticed, "[0-9=]|\\."),
+    negativeChangesNoticed = str_remove_all(negativeChangesNoticed, "[0-9=]|\\."),
+    reasonsForNoChanges = str_remove_all(reasonsForNoChanges, "[0-9=]|\\."),
+    matchedWithExperience = str_remove_all(matchedWithExperience, "[0-9=]|\\.")
+
+  )
+
+
+
+```
+
+
+
+
+```{r, include=FALSE}
+# columns_to_modify <- c(
+#   watchedForecast, interestedInForecast, preferredAdvisory, preferredChannel, purposeForInfo, importantWeatherElement,
+#   sourcesOfForecasts, watchedShambaShapeUp, watchWithOthers, watchFrequency, watchPlatforms,
+#   preferredWatchPlatform, mostImportantForecastElement, timelyAdvisory, accuracyRating, changedPractices, 
+#   changedPracticeDetails, FarmingActivityChangesNoticed, positiveChangesNoticed, negativeChangesNoticed,
+#   reasonsForNoChanges, matchedWithExperience
+# )
+# 
+# any(!colnames(ssu_sec_a) %in% columns_to_modify)
+# 
+# missing_columns <- setdiff(columns_to_modify, colnames(ssu_sec_a))
+# missing_columns
+# 
+# ssu_seca_clean <- ssu_sec_a %>%
+#   mutate(across(all_of(columns_to_modify), 
+#                 ~ str_remove_all(., "[0-9=]|\\.")))
+
+  
+```
+
+
+
+
+## Clean "other columns"
+
+
+
+```{r}
+dim(ssu_seca_clean)
+
+# 106  41
+
+
+```
+
+
+
+```{r}
+
+# Check blank columns
+
+blank_cols <- ssu_seca_clean[, empty_columns(ssu_seca_clean)]
+
+#sum(is.na(blank_cols))  # 636 === 6 columns  (636/106)
+
+
+```
+
+
+The data has 6 empty columns which will be kept for merging and appending purposes
+
+
+
+## Obtain non-empty column names starting with "other"
+
+```{r}
+
+ssu_seca_clean %>%     # 106  41
+  select(-empty_columns(ssu_seca_clean)) %>%  # 106  35  # Filter out blank columns
+  select(starts_with("other", ignore.case = TRUE)) %>%
+names()
+```
+
+## Clean each of the "other" columns separately
+
+
+```{r, include=FALSE}
+attach(ssu_seca_clean)
+
+```
+
+
+```{r}
+unique(otherChannel)
+
+# All unique values are initials and capitalized
+```
+ All unique values are initials and capitalized
+ 
+
+```{r}
+unique(otherSourcesOfForecasts)
+```
+
++ iShamba has different spellings.  
++ SMS has different spellings.  
++ Could "SMS from iShamba" and "SMS-iShamba" be the same as "iShamba SMS"?
+
+
+
+```{r}
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    otherSourcesOfForecasts = str_replace_all(otherSourcesOfForecasts, "(?i)ishamba", "iShamba"),
+    otherSourcesOfForecasts = str_replace_all(otherSourcesOfForecasts, "(?i)SMS", "SMS"),
+    otherSourcesOfForecasts = str_replace_all(otherSourcesOfForecasts, "SMS-iShamba", "iShamba SMS"),
+    otherSourcesOfForecasts = str_replace_all(otherSourcesOfForecasts, "SMS from iShamba", "iShamba SMS"),
+    otherSourcesOfForecasts = str_squish(otherSourcesOfForecasts)
+  )
+  
+
+# (?!) makes matching case insensitive
+
+```
+
+
+
+```{r}
+unique(ssu_seca_clean$otherSourcesOfForecasts)
+```
+
+
+
+```{r}
+unique(otherWatchPlatforms)
+```
+
++ SMS has different spellings. 
++ Radio has different spellings. 
++ Google starts with lower case.  
++ Newspaper starts with lower case.
++ No consistent spacing between responses.  
+
+
+
+
+
+```{r}
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    otherWatchPlatforms = str_replace_all(otherWatchPlatforms, ",", ", "),
+    otherWatchPlatforms = str_replace_all(otherWatchPlatforms, "(?i)sms", "SMS"),
+    otherWatchPlatforms = str_replace_all(otherWatchPlatforms, "(?i)radio", "Radio"),
+    otherWatchPlatforms = str_replace_all(otherWatchPlatforms, "(?i)ishamba", "iShamba"),
+    otherWatchPlatforms = str_replace_all(otherWatchPlatforms, "(?i)google", "Google"),
+    otherWatchPlatforms = str_replace_all(otherWatchPlatforms, "(?i)newspaper", "Newspaper"),
+    otherWatchPlatforms = str_squish(otherWatchPlatforms)
+  )
+ 
+
+
+
+# (?!) makes matching case insensitive
+
+```
+
+
+```{r}
+unique(ssu_seca_clean$otherWatchPlatforms)
+```
+
+
+```{r}
+unique(otherPreferredWatchPlatform)
+```
+
+
++ SMS has different spellings.  
++ Magazine starts with lower case.  
+
+
+
+
+```{r}
+
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    otherPreferredWatchPlatform = str_replace_all(otherPreferredWatchPlatform, "(?i)ishamba", "iShamba"),
+    otherPreferredWatchPlatform = str_replace_all(otherPreferredWatchPlatform, "(?i)SMS", "SMS"),
+    otherPreferredWatchPlatform = str_replace_all(otherPreferredWatchPlatform, "(?i)magazine", "Magazine"),
+    otherPreferredWatchPlatform = str_squish(otherPreferredWatchPlatform)
+  )
+  
+
+```
+
+
+```{r}
+unique(ssu_seca_clean$otherPreferredWatchPlatform)
+```
+
+
+
+```{r}
+unique(otherImportantForecastElement)
+
+```
++ Replace All with all the choices.  
+
+
+
+```{r}
+
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(otherImportantForecastElement = str_replace_all(otherImportantForecastElement, "All", "Start of rain, Likelihood of rain, Amount of rainfall, Flood, Temperature, Drought, Storm, Frost"))
+  
+
+```
+
+
+
+```{r}
+unique(ssu_seca_clean$otherImportantForecastElement)
+
+```
+
+
+
+```{r}
+
+unique(otherChangedPracticeDetails)
+```
+
++ Change all sentences to sentence case.
++ Remove extra spaces.  
+
+
+```{r}
+
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    otherChangedPracticeDetails =str_to_sentence(otherChangedPracticeDetails),
+    otherChangedPracticeDetails = str_squish(otherChangedPracticeDetails)
+  )
+  
+```
+
+
+
+```{r}
+
+unique(ssu_seca_clean$otherChangedPracticeDetails)
+
+```
+
+
+```{r}
+unique(otherPositiveChangesNoticed)
+```
+
+
++ Remove "harvest".  
++ Change all responses to sentence case.  
++ Replace Water harvesting...No longer have to buy coz I buy.  
++ Remove extra spaces.  
+
+
+
+
+```{r}
+
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    
+    otherPositiveChangesNoticed =str_remove_all (otherPositiveChangesNoticed, "\\bharvest\\b"),
+    otherPositiveChangesNoticed = str_replace_all(otherPositiveChangesNoticed, 
+                                                  "Water harvesting...No longer have to buy coz I buy",
+                                                  "I no longer have to buy water because I harvest water"),
+    otherPositiveChangesNoticed = str_to_sentence(otherPositiveChangesNoticed),
+    otherPositiveChangesNoticed = str_squish(otherPositiveChangesNoticed)
+    
+  )
+  
+
+# A regular expression called \\b makes sure that only isolated occurrences of the word "harvest" are changed, 
+  # not phrases that contain other words.
+
+
+```
+
+
+
+```{r}
+unique(ssu_seca_clean$otherPositiveChangesNoticed)
+```
+
+
+## Replace "Other (Specify)" with reponses from columns starting with "other"
+
+
+```{r}
+
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    
+    preferredChannel = str_replace_all(preferredChannel, "Other \\(please specify\\)", replacement = otherChannel),
+    sourcesOfForecasts = str_replace_all(sourcesOfForecasts, "Other \\(specify\\)", 
+                                         replacement = otherSourcesOfForecasts),
+    watchPlatforms = str_replace_all(watchPlatforms, "Other \\(specify\\)", replacement = otherWatchPlatforms),
+    preferredWatchPlatform = str_replace_all(preferredWatchPlatform, "Other \\(specify\\)",
+                                             replacement = otherPreferredWatchPlatform),
+    mostImportantForecastElement = str_replace_all(mostImportantForecastElement, "Other \\(specify\\)",
+                                                replacement = otherImportantForecastElement),
+    changedPracticeDetails = str_replace_all(changedPracticeDetails, "Other \\(specify\\)",
+                                                replacement = otherChangedPracticeDetails),
+    positiveChangesNoticed = str_replace_all(positiveChangesNoticed, "Other \\(specify\\)", 
+                                               replacement = otherPositiveChangesNoticed)
+    
+  )
+ 
+```
+
+
+
+
+
+
+## Clean open-ended questions
+
+
+
+```{r, include=FALSE}
+attach(ssu_seca_clean)
+```
+
+
+```{r}
+unique(negativeChangeDetails)
+```
+
++ Change case to sentence case.  
++ Replace "aboutr" with about.  
++ Remove period from "Sometimes changing of the crop is a new practice and challenging to do." for consistency. 
++ Remove comma from "I lack enough knowledge on organic farming,".
++ Remove extra spaces.  
+
+
+```{r}
+
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    negativeChangeDetails = str_to_sentence(negativeChangeDetails),
+    negativeChangeDetails = str_replace(negativeChangeDetails, "aboutr", replacement = "about"),
+    negativeChangeDetails = str_remove_all(negativeChangeDetails, "\\.$|\\,$"),
+    negativeChangeDetails = str_squish(negativeChangeDetails)
+    
+  )
+ 
+```
+
+
+
+```{r}
+unique(ssu_seca_clean$negativeChangeDetails)
+```
+
+
+
+
+
+
+
+
+
+```{r}
+unique(suggestionsForImprovement)
+```
+
++ Change case to sentence case. (Note the multiple responses separated by comma - 32, 62, 63)  
++ Remove "None" (case insensitive).    
++ Remove "n?a", "N/A", "n/a", "N/a", "n/A", "No suggestions".  
++ Remove periods at the end of the responses for consistency.  
++ Remove extra spaces.
+
+
+
+
+```{r}
+
+#patterns_to_remove <- c("(?i)none", "(?i)No suggestions", "\\.$", "n?a", "N/A", "n/a", "N/a", "n/A")
+
+ssu_seca_clean <- ssu_seca_clean %>%
+  mutate(
+    #suggestionsForImprovement = str_to_sentence(suggestionsForImprovement),
+    suggestionsForImprovement = str_remove_all(suggestionsForImprovement, 
+                                      "(?i)none|(?i)No suggestions|\\.$|n\\?a|N/A|n/a|N/a|n/A"),
+    suggestionsForImprovement = str_squish(suggestionsForImprovement)
+    
+  )
+ 
+```
+
+
+
+
+```{r}
+unique(ssu_seca_clean$suggestionsForImprovement)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Column labels
+
+After modifying the data, we can now assign labels to all the column names.
+
+
+```{r}
+ # Define column labels
+
+ variable_labels <- c(
+
+   index = "Index",
+    respondentID = "E1. Respondent ID",
+    watchedForecast = "A1. Have you watched or received any weather forecast or agro-advisory in the past 12 months?",
+    interestedInForecast = "A2.1 Are you interested in receiving weather forecast or agro-advisory?",
+    preferredAdvisory = "A2.2. What kind of advisory would you want to receive?",
+    otherAdvisory = "77=Other (specify)...6",
+    preferredChannel = "A3. What is your preferred channel for receiving weather forecasts or agro-advisory information?",
+    otherChannel = "77=Other (please specify)",
+    purposeForInfo = "A4. What is the main purpose for which you require weather information?",
+    otherPurposeForInfo = "77=Other (specify)...10",
+    importantWeatherElement = "A5. What is the MOST important element of the weather forecast that you would like to receive?",
+    otherImportantWeatherElement = "77=Other (specify)...12",
+    notInterestedReason = "A6. What is the primary reason for not being interested in receiving weather forecasts or agro-advisory?",
+    otherNotInterestedReason = "77=Other (specify)...14",
+    sourcesOfForecasts = "A7. What are the sources of weather forecasts or agro-advisories you have received in the past 12 months?",
+    otherSourcesOfForecasts =  "77=Other (specify)...16",
+    watchedShambaShapeUp = "Has watched Shamba shape-up weather news segment?",
+    watchingDuration =  "A8. How long have you been watching the Shamba Shape Up Weather News Segment?\r\r\n\r\r\nPlease remind the farmer that this is the segment when a map of Kenya is displayed with weather information during the shamba shape up program.",
+    watchWithOthers = "A9.1. Who do you usually watch the Shamba Shape-Up news segment with?",
+    householdMembersWatching = "A9.2. On average, how many members of your household do you watch the Shamba Shape Up weather news segment with?",
+    watchFrequency = "A10. On a scale of 1 to 5, with 5 being 'always', how often do you watch the Shamba Shape-Up weather news segment?",
+    watchPlatforms = "A11. On which platform(s) do you watch or receive weather forecast information or advisory?",
+    otherWatchPlatforms = "77=Other (specify)...23",
+    preferredWatchPlatform = "A12. From the above platforms, which is your MOST preferred way to watch or receive weather forecast information or advisory?",
+    otherPreferredWatchPlatform = "77=Other (specify)...25",
+    mostImportantForecastElement = "A13. What is your MOST important element of the weather forecast to you?",
+    otherImportantForecastElement = "77=Other (specify)...27",
+    timelyAdvisory = "A14. Was the weather forecast information/advisory timely to guide your farming activities?",
+    accuracyRating = "A15. How would you rate the accuracy of the weather forecast?",
+    changedPractices = "A16. Have you changed your practices/decisions following the advisory you received?",
+    changedPracticeDetails = "A17. How did you change your practice/decision?",
+    otherChangedPracticeDetails = "77=Other (specify)...32",
+    FarmingActivityChangesNoticed = "A18.1. Did you notice any change in your farming activities after making changes in your farming practice following the forecast/advisory?",
+    positiveChangesNoticed = "A18.2. What kind of positive change did you notice?",
+    otherPositiveChangesNoticed = "77=Other (specify)....35",
+    negativeChangesNoticed = "A19.1. Have you noticed negative effects after making changes in your farming practice following the forecast/advisory?",
+    negativeChangeDetails = "A19.2. Please specify the kind of negative effects.",
+    reasonsForNoChanges = "A20. What are the main reasons why you did not make any changes, despite receiving the advisory?",
+    otherReasonsForNoChanges = "77=Other (specify)....39",
+    matchedWithExperience = "A21. Did the weather forecast information or advisory match with your experience/knowledge?",
+    suggestionsForImprovement = "A22. What are your suggestions to improve weather forecasts or agro-advisory services?"  
+   
+     )
+
+```
+
+
+```{r}
+# Set variable/column labels
+ 
+    ssu_seca_clean <- ssu_seca_clean %>%
+      set_variable_labels(.labels = variable_labels) # Requires package labelled
+
+```
+
+
+Using the function View() to open the new data in a spreadsheet reveals the column names and labels.
+
+```{r}
+
+View(ssu_seca_clean)
+
+```
+
+
+
+```{r}
+
+ssu_sec_a_arch <- ssu_seca_clean
+
+# Drop un needed columns and save clean data
+
+# ssu_sec_e_arch <- ssu_sece_clean %>%
+#   select(c(1:2, 5:6, 9, 12:13))
+
+# HINT: Passing View() to a pipeline produces NULL data structure.
+# Avoid the function within a pipeline
+
+```
+
+
+## Generate a data dictionary
+
+Generate a data dictionnary and search for variables with `look_for()`
+
+Requires package labelled.
+
+
+
+```{r}
+# Data dictionary
+
+
+ ssu_B1sec_a_dict <- look_for(ssu_sec_a_arch, labels = TRUE, values = TRUE) 
+# 
+# # Fomart table
+# 
+# #flextable(data_dict)
+# 
+# #gt(data_dict)
+# 
+ #kable(ssu_B1sec_a_dict)
+gt(ssu_B1sec_a_dict)
+
+```
+
+
+
+## Export data to CSV
+
+## long
+
+
+```{r}
+
+#write.csv(ssu_B1sec_e_dict, "ssuB1_sec_e_arch.csv", row.names = FALSE)
+
+```
+
+
+## wide
+
+
+```{r}
+
+#write.csv(ssu_B1sec_e_dict, "ssuB1_sec_e_arch.csv", row.names = FALSE)
+
+```
+
+
+

@@ -1,0 +1,671 @@
+---
+title: 'DATA CLEANING: BATCH1 - SSU SECTION E'
+author: "Njambi"
+date: "January 4, 2024"
+output: html_document
+#encoding: UTF-8
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Loading necessary libraries
+
+```{r, include=FALSE}
+library(tidyr)
+library(tibble)
+library(dplyr)
+library(stringr)
+library(readxl)
+library(tidyverse)
+library(Hmisc)
+library(labelled)
+library(magrittr)
+library(ggplot2)
+library(datawizard)
+library(gtsummary)
+library(gt)
+library(kableExtra)
+library(flextable)
+```
+
+
+## Set the working directory
+
+```{r}
+# Check the current working directory
+
+getwd()
+```
+
+
+```{r}
+# Set working directory (Not necessary since the current wd is the correct wd)
+
+setwd("C:\\Users\\awanjau\\OneDrive - CGIAR\\Alliance\\Alliance_2023\\iShamba_SSU\\SSU_Weather_SurveyAnalysis")
+```
+
+## Loading data
+
+```{r}
+# Read a csv file
+
+ssu_sec_e <- read_csv("ssu_sec_e.csv") # Use this code when the csv file is in the set working directory
+
+#display portion of the data
+
+head(ssu_sec_e)
+```
+
+
+## Understanding data at hand (Screening)
+
+
+```{r}
+# Check the dimension of the data
+
+dim(ssu_sec_e)
+```
+
+
+```{r}
+# Obatain the column names
+
+names(ssu_sec_e)
+```
+
+
+
+### Renaming the columns
+
+The column names are too long for analysis.  
+For ease of subsequent analysis, we will conduct this part of data cleaning process as early as now, before the data cleaning section.  
+
+To create column names and labels, we create new column names, then use the original (long) names as column labels.  
+There are different ways of renaming the columns:  
++ attr(ssu_sec_e, "names") <- c("index", "id", "gender",  "county",  "age",  "loe",  "hhsize")  
++ colnames(ssu_sec_e) <- c("index", "id", "gender",  "county",  "age",  "loe",  "hhsize")
++ names(ssu_sec_e) <- c("index", "id", "gender",  "county",  "age",  "loe",  "hhsize")
+
+
+```{r}
+# Create new column names
+
+colnames(ssu_sec_e) <- c("index", "id", "gender",  "county",  "age",  "loe",  "hhsize")
+
+# Display a part of the data
+
+head(ssu_sec_e)
+
+```
+
+
+Column names are now short and standard.
+
+
+
+```{r}
+# Check for duplicate rows
+
+duplicate_rows <- duplicated(ssu_sec_e) | duplicated(ssu_sec_e, fromLast = TRUE)
+
+# Display the duplicate rows
+
+print(ssu_sec_e[duplicate_rows, ])
+
+# There are no duplicate rows
+
+```
+
+
+### Generate a codebook for the data
+
+Let's now get an overview of all variables and some more information about each variable (e.g. labels, values or value range, frequencies, missing values).  
+We can achieve this by using data_codebook().
+
+
+```{r}
+
+# Codebook 
+# Requires package datawizard
+
+data_codebook(ssu_sec_e)
+
+```
+
+
+
+### Display the unique values of county variable
+
+```{r, include=FALSE}
+
+# This code is similar to using ssu_sece$_ with every variable name
+
+attach(ssu_sec_e)
+
+```
+
+
+
+```{r}
+
+# Unique values of county
+
+unique_county <- unique(county)
+
+unique_county
+ 
+
+```
+
+ 
+
+### Explore the numerical variables
+
+```{r}
+# Calculate the mean and the five number summary of hhsize
+
+ ssu_sec_e %>%
+   select(hhsize) %>%
+   summary()
+```
+
+
+### Look out for any outliers in hhsize
+
+
+```{r}
+# Box-plot of hhsize
+ 
+  ssu_sec_e %>%
+    ggplot(aes(y = hhsize)) +
+     geom_boxplot(outlier.color = "red") +
+     labs(title = "Household Size Box Plot")
+```
+
+
+### Filter rows with outliers
+
+```{r}
+
+# # Identify outliers based on boxplot statistics
+ 
+  outliers <- boxplot.stats(hhsize)$out
+  
+# # # Display rows with outliers
+ 
+  rows_with_outliers <- ssu_sec_e %>%
+    filter(hhsize %in% outliers)
+ 
+  kable(rows_with_outliers)
+```
+
+
+
+
+
+
+## Observations (Diagnosis)
+
+#### The data
+
++ ~~ Variables do not posses the correct data types.~~  
++ Categorical variables have a mixture of numbers, special characters, and text in their data.
++ Data types are not correctly formated, eg the categorical variables are foratted as characters instead of factors.
++ Data has 106 rows and 7 columns.  
++ The column names are too long for analysis.  
++ There are no duplicate rows in the data.  
++ None of the variables has missing values.  
+
+
+#### gender
+
++ Levels in the gender series have a mixture of values, periods, and labels.  
++ The gender series displays two uniques values, while the variable has three levels in the questionnaire. (3 = Prefer not to say)  
+
+#### county
+
++ 2-word county names lack consistency, e.g. Uasin Gishu, Trans-Nzoia  
++ There are 34 counties in the data whereas 45 are defined in the questionnaire.  
++ ~~ Contains NAs ~~
+
+#### age
+
++ The age series displays 6 of 7 defined levels.  
++ Levels in the age series have a mixture of values, periods, and labels.  
++ The age series also contains "Don't know".  
+
+#### loe
+
++ The loe series displays 6 of 7 defined levels.  
++ Levels in the loe series have a mixture of values, periods, and labels.  
++ The loe series also contains "Don't know". 
+
+#### hhsize
+
++ The minimum value is 1 and the maximum value is 17.  
++ hhize has 5 outliers.  
+
+
+
+## Data cleaning activities (Treatment)
+
+
+#### The data
+
+1. Format variables with correct data types (Convert and format data types).
+2. Separate the categorical columns into "_values" and "_labels" to obtain clean categories/levels.
+3. Convert categorical variables from character to factor.  
+ - Use the option exclude to exclude levels not wanted in the data.  
+ - Use option levels to denote levels, including those that do not appear in the data.
+4. Label all the columns in the new dataset.   
+5. Remove NAs introduced by defining levels excluded in the data and exlcuding levels.
+ 
+
+#### gender
+
+1. Separate the gender column into gender_values and gender_labels.
+2. Define levels.
+3. Convert gender_labels from character to factor.
+4. Exclude the last category "Prefer not to say".
+
+
+
+```{r, include=FALSE}
+
+names(ssu_sec_e)
+```
+
+
+
+```{r}
+
+# Separate the gender column into gender_values and gender_labels.
+
+ssu_sece_clean <- ssu_sec_e %>%
+  separate(
+    col = gender, 
+    into = c("gender_values", "gender_labels"),
+    sep = "\\. ",
+    remove = FALSE 
+           ) %>%
+  mutate(                          
+  gender_labels = factor(
+    gender_labels, 
+    levels = c("Male", "Female" ),
+    exclude = "Prefer not to say"  
+    ),  
+  gender_values = factor(
+    gender_values, 
+    levels = c("1", "2" ),
+    exclude = "98"  
+    ) 
+  )
+  
+# Mutate here is used to format the _labels as a factor
+# R keeps the original column
+  
+head(ssu_sece_clean)
+   
+```
+
+
+```{r}
+
+# Check the unique values of gender
+
+unique(ssu_sece_clean$gender_labels)
+```
+
+
+
+#### county
+
+1. Remove extra spaces.  
+2. Format all county names as proper. 
+3. Replace the hyphen in the 2-word county names with space for consistency.  
+4. Define all the 45 counties as levels.  
+5. Convert county to factor.  
+
+
+
+
+
+```{r}
+# Format all county names as proper.
+
+ssu_sece_clean <- ssu_sece_clean %>%
+  mutate(county = tolower(county),  # Convert all county names to lowercase
+         county = str_to_title(county))  # Convert to proper case
+
+```
+
+
+```{r}
+
+# Replace the hyphen in the 2-word county names with space for consistency.
+
+ # ssu_sece_clean <- ssu_sece_clean %>%
+ #   mutate(county = str_replace_all(county, "[---]", " ")) 
+
+ssu_sece_clean <- ssu_sece_clean %>%
+  mutate(county = str_replace_all(county, "\\[---\\]", " "))
+
+
+# This code uses a regular expression to match various hyphen characters (ASCII hyphen, en dash, and em dash) and replace them with a space.
+
+```
+
+
+
+```{r}
+# Remove extra spaces.
+
+ssu_sece_clean <- ssu_sece_clean %>%
+  mutate(county = str_squish(county))
+
+
+```
+
+
+
+```{r}
+# Define county levels
+
+county_levels <- c(
+  "Mombasa",	"Kwale",	"Kilifi",	"Tana River",	"Lamu",	"Taita Taveta",	"Garissa",	"Wajir",	"Mandera",	"Marsabit",	"Isiolo",	"Meru",	"Tharaka Nithi",	"Embu",	"Kitui",	"Machakos",	"Makueni",	"Nyandarua",	"Nyeri",	"Kirinyaga",	"Murang'a",	"Kiambu",	"Turkana",	"West Pokot",	"Samburu",	"Trans Nzoia",	"Uasin Gishu",	"Elgeyo Marakwet",	"Nandi",	"Baringo",	"Laikipia",	"Nakuru",	"Narok",	"Kajiado",	"Kericho",	"Bomet",	"Kakamega",	"Vihiga",	"Bungoma",	"Busia",	"Siaya",	"Kisumu",	"Homa Bay",	"Migori",	"Kisii",	"Nyamira",	"Nairobi"
+)
+```
+
+
+
+```{r}
+# Convert county from character to factor
+
+ssu_sece_clean %>%
+  mutate(
+  county = factor(
+    county, 
+    levels = county_levels
+    #levels = intersect(county_levels, unique(ssu_sece_clean$county))
+  )
+    ) 
+```
+
+```{r}
+
+unique(county)
+
+sum(is.na(county))
+
+```
+
+
+```{r}
+# Check for missing values
+missing_values <- county[is.na(county)]
+
+# Print the missing values
+print(missing_values)
+
+sum(is.na(ssu_sece_clean))
+```
+
+```{r, include=FALSE}
+
+# # Remove missing values
+
+# clean_county <- na.omit(county)
+# 
+# # Print unique values after removing missing values
+
+# unique_values <- unique(clean_county)
+# print(unique_values)
+```
+
+
+```{r, include=FALSE}
+# Tabulate county
+
+table(ssu_sece_clean$county)
+
+```
+
+
+
+#### age
+
+1. Separate the age column into age_values and age_labels.
+2. Define levels and include the first category (Below 18 years), even though it does not appear in the data.
+3. Convert age_labels from character to factor.
+4. Exclude the last category "Don't know/Prefer not to answer".  
+
+
+```{r}
+
+# Age levels
+
+age_levels <- c("Below 18 years", "18 - 25 Years", "26 - 35 Years", "36 - 45 Years", "46 - 55 Years", "Above 55 Years" )
+
+
+ssu_sece_clean <- ssu_sece_clean %>%
+  separate(
+    col = age, 
+    into = c("age_values", "age_labels"),
+    sep = "\\. ",
+    convert = TRUE,
+    remove = FALSE 
+           ) %>%
+  mutate(
+  age_labels = factor(
+    age_labels, 
+    levels = age_levels,
+    #levels = intersect(age_levels, unique(ssu_sece_clean$age_labels)),
+    ordered = TRUE,  # Age is ordinal
+    exclude = "Don't know/prefer not to answer"  
+    )  
+  )
+head(ssu_sece_clean)
+
+```
+
+
+```{r}
+levels(ssu_sece_clean$age_labels)
+```
+
+
+
+#### loe
+
+1. Separate the loe column into loe_values and loe_labels.
+2. Define levels and include the first category (No formal educcation), even though it does not appear in the data.
+3. Convert loe_labels from character to factor.
+4. Exclude the last category "Don't know/Prefer not to answer". 
+
+
+```{r}
+
+# Define loe levels
+
+loe_levels <- c("No formal education", "Primary education", "Secondary education", "Vocational/Technical training", "Tertiary/University education", "Postgraduate education")
+
+ssu_sece_clean <- ssu_sece_clean %>%
+  separate(
+    col = loe, 
+    into = c("loe_values", "loe_labels"),
+    sep = "\\. ",
+    convert = TRUE,
+    remove = FALSE 
+  ) %>%
+  mutate(
+  loe_labels = factor(
+    loe_labels, 
+    levels = loe_levels,
+    #levels = intersect(loe_levels, unique(ssu_sece_clean$loe_labels)),
+    ordered = TRUE,
+    exclude = "Don't know/prefer not to answer"  
+    )  
+  )
+
+head(ssu_sece_clean)    
+
+```
+
+
+```{r}
+
+levels(ssu_sece_clean$loe_labels)
+```
+
+
+
+#### hhsize
+
+1. Contact iShamba to confirm/correct the values.  
+
+
+### Checking and handling missing values
+
+The exclude option in the factor() function produces missing values.
+Using the describe() function - similar to data_codebook() - reveals the number of mmissing values per variable, among other details
+
+
+```{r}
+# Check missing values in the data set
+
+describe(ssu_sece_clean)
+
+```
+
+Age and loe have 2 and 1 missing values respectively.
+We will remove rows with the missing values from the data.
+
+```{r}
+
+# Count missing values in the data
+
+sum(is.na(ssu_sece_clean))  # 3 missing values
+
+dim(ssu_sece_clean) # 106 rows,  13 columns
+
+# Remove missing values from the data
+
+ssu_sece_clean <- na.omit(ssu_sece_clean)  
+
+```
+
+
+```{r}
+# Check the dimension of the data again.
+
+dim(ssu_sece_clean)  
+```
+
+The number of rows reduced from 106 to 103.
+
+
+
+### Column labels
+
+After modifying the data, we can now assign labels to all the column names.
+
+
+```{r}
+ # Define column labels
+
+variable_labels <- c(
+  "index" = "Index",
+  "id" = "E1..Respondent.ID",
+  "gender" = "E2..Gender",
+  "gender_values" = "Gender codes",
+  "gender_labels" = "Gender categories",
+  "county" = "E3..Which.county.do.you.reside.in.",
+  "age" = "E4..How.old.are.you.",
+  "age_values" = "Age codes",
+  "age_labels" = "Age categories",
+  "loe" = "E5..What.is.the.highest.level.of.formal.education.you.have.completed.",
+  "loe_values" = "loe codes",
+  "loe_labels" = "loe categories",
+  "hhsize" = "E6..Including.yourself..how.many.adults.and.children..live.in.your.household...The.individuals.who.have.been.residing.in.your.household.continuously.for.the.past.six.months"
+    )
+
+```
+
+
+```{r}
+# Set variable/column labels
+
+   ssu_sece_clean <- ssu_sece_clean %>%
+     set_variable_labels(.labels = variable_labels) # Requires package labelled
+
+# ssu_sece_clean <- ssu_sece_clean %>%
+#     set_variable_labels(value = variable_labels)
+
+
+```
+
+
+Using the function View() to open the new data in a spreadsheet reveals the column names and labels.
+
+```{r}
+
+View(ssu_sece_clean)
+
+```
+
+
+
+```{r}
+
+# Drop un needed columns and save clean data
+
+ssuB1_sec_e_arch <- ssu_sece_clean %>%
+  select(c(1:2, 5:6, 9, 12:13))
+
+# HINT: Passing View() to a pipeline produces NULL data structure.
+# Avoid the function within a pipeline
+
+```
+
+
+## Generate a data dictionary
+
+Generate a data dictionnary and search for variables with `look_for()`
+
+Requires package labelled.
+
+
+
+```{r}
+# Data dictionary
+
+ssu_B1sec_e_dict <- look_for(ssuB1_sec_e_arch, labels = TRUE, values = TRUE) %>%
+  select(-c(missing, value_labels))
+
+  gt(ssu_B1sec_e_dict)
+
+
+# Fomart table
+
+#flextable(ssu_B1sec_e_dict)
+
+
+  
+#kable(ssu_B1sec_e_dict)
+
+```
+
+
+
+## Export data to CSV
+
+
+```{r}
+
+readr::write_csv(ssuB1_sec_e_arch, "ssuB1_sec_e_arch.csv")
+
+```
+
+
